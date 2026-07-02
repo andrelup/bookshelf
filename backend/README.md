@@ -85,6 +85,8 @@ Los schemas Pydantic se separan por operación: `BookCreate`, `BookUpdate`, `Boo
 make dev
 
 # O en local, dentro de backend/
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 alembic upgrade head
 python seed.py
