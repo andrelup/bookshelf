@@ -10,6 +10,15 @@ The container is fully isolated from any other BookShelf environment: it
 uses its own name and host port, distinct from `infra/docker-compose.yml`'s
 `bookshelf-postgres` service, so it never collides with a developer's (or
 another agent's) locally running stack.
+
+IMPORTANT: the fixture below is named `book_db_session`, not `db_session`,
+on purpose. The top-level `tests/conftest.py` (from feature/auth-jwt)
+already defines a `db_session` fixture (a transaction-per-test session
+against the real, already-migrated dev database configured via `.env`),
+used by `tests/integration/test_user_repository.py`. Since this conftest
+lives closer to the test files under `tests/integration/`, a same-named
+fixture here would silently shadow that one for every test in this
+directory — including the unrelated user-repository tests.
 """
 
 import shutil
@@ -19,7 +28,7 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from src.adapters.outbound.persistence.sqlalchemy_models import Base
+from src.adapters.outbound.persistence.sqlalchemy_models import Base, UserORM
 
 _CONTAINER_NAME = "bookshelf-books-crud-test-db"
 _HOST_PORT = 55433
@@ -27,6 +36,11 @@ _HOST_PORT = 55433
 # at the end of the test session — not a real secret.
 _TEST_PASSWORD = "test_password"  # noqa: S105
 _DATABASE_URL = f"postgresql+asyncpg://postgres:{_TEST_PASSWORD}@localhost:{_HOST_PORT}/postgres"
+
+# `books.seller_id` has a physical FK to `users.id` (see the create_books_table
+# migration). `tests.factories.make_book` defaults to this id, so a matching
+# user row must exist before any book can be inserted.
+DEFAULT_SELLER_ID = 1
 
 
 def _docker_available() -> bool:
@@ -84,14 +98,28 @@ def postgres_container() -> Generator[None, None, None]:
 
 
 @pytest.fixture
-async def db_session(postgres_container: None) -> AsyncGenerator[AsyncSession, None]:
-    """A fresh `AsyncSession` against a clean `books` table for a single test."""
+async def book_db_session(postgres_container: None) -> AsyncGenerator[AsyncSession, None]:
+    """A fresh `AsyncSession` against clean `users`/`books` tables for a single test.
+
+    Seeds a single user row (id=`DEFAULT_SELLER_ID`) so books can be
+    inserted without violating the `books.seller_id` foreign key.
+    """
     engine = create_async_engine(_DATABASE_URL)
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
 
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     async with session_factory() as session:
+        session.add(
+            UserORM(
+                id=DEFAULT_SELLER_ID,
+                email="seller@example.com",
+                name="Default Test Seller",
+                role="seller",
+                hashed_password="not-a-real-hash",  # noqa: S106
+            )
+        )
+        await session.commit()
         yield session
 
     async with engine.begin() as connection:

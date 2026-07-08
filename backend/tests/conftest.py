@@ -21,7 +21,6 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-
 from src.adapters.outbound.persistence.database import get_db_session
 from src.config.settings import settings
 from src.domain.models.user import User, UserRole

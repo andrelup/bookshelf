@@ -7,9 +7,9 @@ from src.adapters.outbound.persistence.book_repository import SqlAlchemyBookRepo
 from tests.factories import make_book
 
 
-async def test_save_when_new_book_persists_and_assigns_id(db_session: AsyncSession) -> None:
+async def test_save_when_new_book_persists_and_assigns_id(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     book = make_book()
 
     # Act
@@ -21,9 +21,9 @@ async def test_save_when_new_book_persists_and_assigns_id(db_session: AsyncSessi
     assert saved.price == 39.99
 
 
-async def test_find_by_id_when_book_exists_returns_book(db_session: AsyncSession) -> None:
+async def test_find_by_id_when_book_exists_returns_book(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     saved = await sut.save(make_book())
     assert saved.id is not None
 
@@ -36,9 +36,9 @@ async def test_find_by_id_when_book_exists_returns_book(db_session: AsyncSession
     assert found.isbn == saved.isbn
 
 
-async def test_find_by_id_when_missing_returns_none(db_session: AsyncSession) -> None:
+async def test_find_by_id_when_missing_returns_none(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
 
     # Act
     found = await sut.find_by_id(999)
@@ -47,9 +47,9 @@ async def test_find_by_id_when_missing_returns_none(db_session: AsyncSession) ->
     assert found is None
 
 
-async def test_find_all_paginates_results(db_session: AsyncSession) -> None:
+async def test_find_all_paginates_results(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     for index in range(5):
         await sut.save(make_book(isbn=f"isbn-{index}"))
 
@@ -60,9 +60,9 @@ async def test_find_all_paginates_results(db_session: AsyncSession) -> None:
     assert len(page) == 2
 
 
-async def test_count_returns_total_number_of_books(db_session: AsyncSession) -> None:
+async def test_count_returns_total_number_of_books(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     for index in range(3):
         await sut.save(make_book(isbn=f"isbn-{index}"))
 
@@ -74,10 +74,10 @@ async def test_count_returns_total_number_of_books(db_session: AsyncSession) -> 
 
 
 async def test_search_matches_title_author_or_category_case_insensitively(
-    db_session: AsyncSession,
+    book_db_session: AsyncSession,
 ) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     await sut.save(make_book(isbn="isbn-1", author="Eric Evans", title="Clean Code"))
     await sut.save(make_book(isbn="isbn-2", author="Martin Fowler", title="Refactoring"))
     await sut.save(
@@ -92,9 +92,9 @@ async def test_search_matches_title_author_or_category_case_insensitively(
     assert results[0].title == "Clean Code"
 
 
-async def test_count_search_returns_total_matches(db_session: AsyncSession) -> None:
+async def test_count_search_returns_total_matches(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     await sut.save(make_book(isbn="isbn-1", author="Eric Evans", title="Refactoring"))
     await sut.save(make_book(isbn="isbn-2", author="Eric Evans", title="Clean Code"))
     await sut.save(make_book(isbn="isbn-3", author="Martin Fowler", title="Domain-Driven Design"))
@@ -106,9 +106,9 @@ async def test_count_search_returns_total_matches(db_session: AsyncSession) -> N
     assert total == 2
 
 
-async def test_save_when_existing_book_updates_fields(db_session: AsyncSession) -> None:
+async def test_save_when_existing_book_updates_fields(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     saved = await sut.save(make_book())
     assert saved.id is not None
 
@@ -122,9 +122,11 @@ async def test_save_when_existing_book_updates_fields(db_session: AsyncSession) 
     assert updated.stock == 10
 
 
-async def test_save_when_id_does_not_exist_raises_value_error(db_session: AsyncSession) -> None:
+async def test_save_when_id_does_not_exist_raises_value_error(
+    book_db_session: AsyncSession,
+) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     orphaned_update = make_book(id=999)
 
     # Act / Assert
@@ -132,9 +134,9 @@ async def test_save_when_id_does_not_exist_raises_value_error(db_session: AsyncS
         await sut.save(orphaned_update)
 
 
-async def test_delete_removes_book(db_session: AsyncSession) -> None:
+async def test_delete_removes_book(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
     saved = await sut.save(make_book())
     assert saved.id is not None
 
@@ -145,9 +147,9 @@ async def test_delete_removes_book(db_session: AsyncSession) -> None:
     assert await sut.find_by_id(saved.id) is None
 
 
-async def test_delete_when_book_missing_does_not_raise(db_session: AsyncSession) -> None:
+async def test_delete_when_book_missing_does_not_raise(book_db_session: AsyncSession) -> None:
     # Arrange
-    sut = SqlAlchemyBookRepository(db_session)
+    sut = SqlAlchemyBookRepository(book_db_session)
 
     # Act / Assert — deleting a non-existent book is a no-op, not an error.
     await sut.delete(999)
