@@ -1,19 +1,12 @@
 """create books table
 
 Revision ID: ef29b2bd937b
-Revises:
+Revises: e470376bb059
 Create Date: 2026-07-08 18:29:02.052979
 
-PROVISIONAL down_revision: this is the first migration on the
-`feature/books-crud` branch (issue #7), created before issue #6
-(`feature/auth-jwt`, adding the `users` table) merged into `main`. Once
-issue #6 lands, `down_revision` below MUST be updated to point at the
-`users` table migration's revision id, so migration history stays linear.
-
-`seller_id` is a logical reference to `users.id` — no physical foreign key
-constraint is declared here because the `users` table does not exist yet
-on this branch. Add the FK constraint in a follow-up migration once
-issue #6 merges and the ordering above is fixed.
+Reconciled after rebasing onto feature/auth-jwt (issue #6): chained after
+e470376bb059 (create users table), and `seller_id` now has a physical
+foreign key to `users.id`, since that table exists earlier in history.
 """
 
 from collections.abc import Sequence
@@ -23,7 +16,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "ef29b2bd937b"
-down_revision: str | None = None
+down_revision: str | None = "e470376bb059"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -41,6 +34,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("category", sa.String(length=100), nullable=False),
         sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(["seller_id"], ["users.id"], name="fk_books_seller_id_users"),
         sa.UniqueConstraint("isbn"),
     )
     op.create_index(op.f("ix_books_author"), "books", ["author"], unique=False)

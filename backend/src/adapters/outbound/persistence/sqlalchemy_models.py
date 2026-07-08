@@ -5,7 +5,7 @@ persistence-specific counterparts, mapped to/from the domain via the
 mapper functions in the matching `*_repository.py` module.
 """
 
-from sqlalchemy import Numeric, String, Text
+from sqlalchemy import ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -28,10 +28,7 @@ class UserORM(Base):
 class BookORM(Base):
     """ORM mapping for the `books` table.
 
-    `seller_id` is a logical reference to `users.id`. No physical foreign
-    key constraint is declared yet — see the accompanying Alembic
-    migration's docstring for the plan to add it once both migrations
-    (users, books) are chained in the same history.
+    `seller_id` is a foreign key to `users.id`.
     """
 
     __tablename__ = "books"
@@ -42,6 +39,6 @@ class BookORM(Base):
     isbn: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
     price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     stock: Mapped[int] = mapped_column(nullable=False, default=0)
-    seller_id: Mapped[int] = mapped_column(nullable=False, index=True)
+    seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     category: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
