@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     db_name: str = "bookshelf"
     log_level: str = "INFO"
 
+    # Required on purpose: the JWT signing secret must come from the
+    # environment, never hardcoded.
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expires_minutes: int = 60
+
     @property
     def database_url(self) -> str:
         """Async SQLAlchemy URL built from the discrete DB_* variables."""
@@ -37,5 +43,5 @@ class Settings(BaseSettings):
         )
 
 
-# mypy can't know that the required db_password arrives via .env at runtime.
+# mypy can't know that the required db_password/jwt_secret_key arrive via .env at runtime.
 settings = Settings()  # type: ignore[call-arg]

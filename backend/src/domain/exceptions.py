@@ -16,3 +16,11 @@ class BookNotFoundError(DomainError):
 
 class UnauthorizedError(DomainError):
     """Raised when an operation is attempted without proper authorization."""
+
+
+class DuplicateEmailError(DomainError):
+    """Raised when trying to register a user with an already-used email."""
+
+
+class InvalidCredentialsError(DomainError):
+    """Raised when login credentials (email/password) do not match."""

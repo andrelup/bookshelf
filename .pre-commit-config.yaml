@@ -31,6 +31,12 @@ repos:
           - pgvector
           - asyncpg
           - alembic
+          - "python-jose[cryptography]"
+          - "passlib[bcrypt]"
+          - "bcrypt<4.1"
+          - email-validator
+          - types-passlib
+          - types-python-jose
 
 # ------------------------- Frontend (React) -------------------------
 # Aquí irán los hooks del frontend (ESLint, Prettier) con `files: ^frontend/`
