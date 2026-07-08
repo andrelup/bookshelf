@@ -11,6 +11,7 @@ from functools import lru_cache
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.adapters.outbound.persistence.book_repository import SqlAlchemyBookRepository
 from src.adapters.outbound.persistence.database import get_db_session
 from src.adapters.outbound.persistence.user_repository import SqlAlchemyUserRepository
 from src.adapters.outbound.security.jwt_token_service import JwtTokenService
@@ -19,6 +20,7 @@ from src.config.settings import settings
 from src.domain.ports.repositories import UserRepository
 from src.domain.ports.services import PasswordHasher, TokenService
 from src.domain.services.auth_service import AuthService
+from src.domain.services.book_service import BookService
 
 
 def get_user_repository(session: AsyncSession = Depends(get_db_session)) -> UserRepository:
@@ -53,3 +55,8 @@ def get_auth_service(
         password_hasher=password_hasher,
         token_service=token_service,
     )
+
+
+def get_book_service(session: AsyncSession = Depends(get_db_session)) -> BookService:
+    """Build a `BookService` wired to the SQLAlchemy `BookRepository` implementation."""
+    return BookService(SqlAlchemyBookRepository(session))
