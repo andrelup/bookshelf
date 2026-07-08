@@ -74,6 +74,10 @@ extend-immutable-calls = [
 # S101: bandit forbids `assert`, but in pytest it IS the assertion tool.
 # S105/S106: fake passwords/tokens passed as literals are unavoidable in tests.
 "tests/**" = ["S101", "S105", "S106"]
+# S603/S607: the integration fixture shells out to the `docker` CLI with a
+# fixed, hardcoded argument list (no user input) to manage an ephemeral
+# test-only Postgres container.
+"tests/integration/conftest.py" = ["S603", "S607"]
 
 [tool.mypy]
 strict = true
