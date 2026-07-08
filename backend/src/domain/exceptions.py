@@ -10,9 +10,9 @@ class DomainError(Exception):
     """Base exception for all domain-level errors."""
 
 
-class BookNotFound(DomainError):
+class BookNotFoundError(DomainError):
     """Raised when a requested book does not exist."""
 
 
-class Unauthorized(DomainError):
+class UnauthorizedError(DomainError):
     """Raised when an operation is attempted without proper authorization."""
