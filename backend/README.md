@@ -56,7 +56,7 @@ backend/
 2. **Los ports son `Protocol` classes** (`typing.Protocol`), no clases abstractas.
 3. **Los modelos de dominio son independientes de SQLAlchemy.** Los modelos ORM viven en `adapters/outbound/persistence/sqlalchemy_models.py` y se mapean desde/hacia el dominio.
 4. **Inyección de dependencias en `config/container.py`.** Conecta cada port con su implementación concreta; los routers reciben los servicios ya inyectados vía `Depends`.
-5. **Las excepciones de dominio se traducen en el `error_handler` middleware:** `BookNotFound` → 404, `Unauthorized` → 401, `ValidationError` → 422.
+5. **Las excepciones de dominio se traducen en el `error_handler` middleware:** `BookNotFoundError` → 404, `UnauthorizedError` → 401, `ValidationError` → 422.
 
 ## Formato de respuesta de la API
 
@@ -88,6 +88,7 @@ make dev
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
+pre-commit install   # instala los git hooks (config en la raíz del monorepo)
 alembic upgrade head
 python seed.py
 uvicorn src.main:app --reload
