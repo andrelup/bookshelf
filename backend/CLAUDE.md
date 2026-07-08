@@ -32,7 +32,7 @@ backend/
 │   │   │   ├── book_service.py
 │   │   │   ├── search_service.py
 │   │   │   └── recommendation_service.py
-│   │   └── exceptions.py          # Excepciones de dominio (BookNotFound, Unauthorized, etc.)
+│   │   └── exceptions.py          # Excepciones de dominio (BookNotFoundError, UnauthorizedError, etc.)
 │   │
 │   ├── adapters/                  # ADAPTADORES — implementaciones concretas de los ports
 │   │   ├── inbound/               # Adaptadores de entrada (cómo el mundo llama al dominio)
@@ -88,9 +88,10 @@ backend/
 │   └── versions/
 ├── pyproject.toml
 ├── Dockerfile
-├── .pre-commit-config.yaml
 └── seed.py
 ```
+
+Nota: el `.pre-commit-config.yaml` vive en la **raíz del monorepo** (los git hooks son únicos por repositorio); los hooks del backend filtran con `files: ^backend/`.
 
 ## Reglas de Arquitectura Hexagonal
 
@@ -114,7 +115,7 @@ backend/
 
 4. **Dependency injection en `config/container.py`.** Conecta los ports con sus implementaciones concretas. Los routers reciben los servicios de dominio ya inyectados via FastAPI Depends.
 
-5. **Las excepciones de dominio se traducen en el error_handler middleware.** `BookNotFound` → HTTP 404, `Unauthorized` → HTTP 401, `ValidationError` → HTTP 422.
+5. **Las excepciones de dominio se traducen en el error_handler middleware.** `BookNotFoundError` → HTTP 404, `UnauthorizedError` → HTTP 401, `ValidationError` → HTTP 422.
 
 ## Convenciones de código
 
