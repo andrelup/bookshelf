@@ -24,3 +24,16 @@ class DuplicateEmailError(DomainError):
 
 class InvalidCredentialsError(DomainError):
     """Raised when login credentials (email/password) do not match."""
+
+
+class ForbiddenError(DomainError):
+    """Raised when an authenticated user is not allowed to perform an operation.
+
+    Examples: a customer trying to create/delete a book, or a seller trying
+    to edit or delete another seller's book. Translated to HTTP 403 by the
+    error_handler middleware.
+    """
+
+
+class BookValidationError(DomainError):
+    """Raised when book data violates a domain business rule."""
