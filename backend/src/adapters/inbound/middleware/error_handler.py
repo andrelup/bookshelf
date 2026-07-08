@@ -12,8 +12,10 @@ from fastapi.responses import JSONResponse
 from src.adapters.inbound.schemas.common import ApiResponse
 from src.domain.exceptions import (
     BookNotFoundError,
+    BookValidationError,
     DomainError,
     DuplicateEmailError,
+    ForbiddenError,
     InvalidCredentialsError,
     UnauthorizedError,
 )
@@ -22,7 +24,9 @@ _STATUS_CODES: dict[type[DomainError], int] = {
     BookNotFoundError: 404,
     UnauthorizedError: 401,
     InvalidCredentialsError: 401,
+    ForbiddenError: 403,
     DuplicateEmailError: 409,
+    BookValidationError: 422,
 }
 _DEFAULT_STATUS_CODE = 500
 
