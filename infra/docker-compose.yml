@@ -1,0 +1,30 @@
+# Entorno de infraestructura de BookShelf.
+#
+# Las credenciales viven en backend/.env (no versionado) y se inyectan
+# por interpolación, por eso el comando canónico es (desde infra/):
+#
+#   docker compose --env-file ../backend/.env up -d
+#
+name: bookshelf
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: bookshelf-postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:?falta DB_USERNAME en el env-file}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?falta DB_PASSWORD en el env-file}
+      POSTGRES_DB: ${DB_NAME:?falta DB_NAME en el env-file}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
