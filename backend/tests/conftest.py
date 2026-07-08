@@ -15,6 +15,7 @@ from collections.abc import AsyncGenerator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from collections.abc import AsyncIterator
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncSession,
@@ -68,7 +69,6 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
         yield client
     app.dependency_overrides.clear()
 
-
 @pytest.fixture
 def seller_user() -> User:
     """A seller who owns books used across tests as the default owner."""
@@ -103,3 +103,11 @@ def customer_user() -> User:
         role=UserRole.CUSTOMER,
         hashed_password="not-a-real-hash",  # noqa: S106
     )
+
+"""Global fixtures shared by the whole test suite."""
+@pytest.fixture
+async def client() -> AsyncIterator[AsyncClient]:
+    """HTTP client bound to the FastAPI app, without a running server."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
+        yield async_client
