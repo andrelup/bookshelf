@@ -5,7 +5,6 @@ from collections.abc import AsyncGenerator
 import httpx
 import pytest
 from fastapi import FastAPI
-
 from src.adapters.inbound.middleware.error_handler import register_exception_handlers
 from src.domain.exceptions import (
     BookNotFoundError,
