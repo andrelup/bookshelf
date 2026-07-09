@@ -1,9 +1,10 @@
 """Favourite list use cases: create, list, get, rename, delete and manage books.
 
 Only customers may manage favourite lists, and each customer may only reach
-their own lists. Both rules are enforced here (not in a middleware) and
-translated to HTTP 403 by the error_handler middleware, mirroring the pattern
-established by `BookService`.
+their own lists. Both rules are enforced here (not in a middleware). Wrong
+role translates to HTTP 403; a list that doesn't exist or isn't owned by the
+caller both translate to HTTP 404, so a customer can't tell the two cases
+apart for another customer's list.
 """
 
 from src.domain.exceptions import (
@@ -61,26 +62,26 @@ class FavouriteListService:
         """Return a single favourite list owned by `user`.
 
         Raises:
-            ForbiddenError: if `user` is not a customer, or not the list's owner.
-            FavouriteListNotFoundError: if no list exists with `list_id`.
+            ForbiddenError: if `user` is not a customer.
+            FavouriteListNotFoundError: if no list exists with `list_id`, or it
+                exists but belongs to another customer (existence of other
+                customers' lists is not disclosed).
         """
         self._ensure_customer(user)
-        favourite_list = await self._get_or_raise(list_id)
-        self._ensure_owner(user, favourite_list)
-        return favourite_list
+        return await self._get_owned_or_raise(user, list_id)
 
     async def rename(self, user: User, list_id: int, name: str) -> FavouriteList:
         """Rename an existing favourite list owned by `user`.
 
         Raises:
-            ForbiddenError: if `user` is not a customer, or not the list's owner.
-            FavouriteListNotFoundError: if no list exists with `list_id`.
+            ForbiddenError: if `user` is not a customer.
+            FavouriteListNotFoundError: if no list exists with `list_id`, or it
+                exists but belongs to another customer.
             FavouriteListValidationError: if `name` is blank.
             DuplicateFavouriteListNameError: if the owner already has that name.
         """
         owner_id = self._ensure_customer(user)
-        favourite_list = await self._get_or_raise(list_id)
-        self._ensure_owner(user, favourite_list)
+        favourite_list = await self._get_owned_or_raise(user, list_id)
         clean_name = self._validate_name(name)
         if clean_name != favourite_list.name:
             await self._ensure_name_available(owner_id, clean_name)
@@ -91,26 +92,26 @@ class FavouriteListService:
         """Delete a favourite list (and its items) owned by `user`.
 
         Raises:
-            ForbiddenError: if `user` is not a customer, or not the list's owner.
-            FavouriteListNotFoundError: if no list exists with `list_id`.
+            ForbiddenError: if `user` is not a customer.
+            FavouriteListNotFoundError: if no list exists with `list_id`, or it
+                exists but belongs to another customer.
         """
         self._ensure_customer(user)
-        favourite_list = await self._get_or_raise(list_id)
-        self._ensure_owner(user, favourite_list)
+        await self._get_owned_or_raise(user, list_id)
         await self._favourite_list_repository.delete(list_id)
 
     async def add_book(self, user: User, list_id: int, book_id: int) -> FavouriteList:
         """Add a catalog book to a favourite list owned by `user`.
 
         Raises:
-            ForbiddenError: if `user` is not a customer, or not the list's owner.
-            FavouriteListNotFoundError: if no list exists with `list_id`.
+            ForbiddenError: if `user` is not a customer.
+            FavouriteListNotFoundError: if no list exists with `list_id`, or it
+                exists but belongs to another customer.
             BookNotFoundError: if no book exists with `book_id`.
             DuplicateFavouriteBookError: if the book is already in the list.
         """
         self._ensure_customer(user)
-        favourite_list = await self._get_or_raise(list_id)
-        self._ensure_owner(user, favourite_list)
+        favourite_list = await self._get_owned_or_raise(user, list_id)
         if await self._book_repository.find_by_id(book_id) is None:
             raise BookNotFoundError(f"Book {book_id} not found")
         if book_id in favourite_list.book_ids:
@@ -126,20 +127,26 @@ class FavouriteListService:
         Removing a book that is not in the list is a no-op, not an error.
 
         Raises:
-            ForbiddenError: if `user` is not a customer, or not the list's owner.
-            FavouriteListNotFoundError: if no list exists with `list_id`.
+            ForbiddenError: if `user` is not a customer.
+            FavouriteListNotFoundError: if no list exists with `list_id`, or it
+                exists but belongs to another customer.
         """
         self._ensure_customer(user)
-        favourite_list = await self._get_or_raise(list_id)
-        self._ensure_owner(user, favourite_list)
+        favourite_list = await self._get_owned_or_raise(user, list_id)
         if book_id in favourite_list.book_ids:
             favourite_list.book_ids.remove(book_id)
             return await self._favourite_list_repository.save(favourite_list)
         return favourite_list
 
-    async def _get_or_raise(self, list_id: int) -> FavouriteList:
+    async def _get_owned_or_raise(self, user: User, list_id: int) -> FavouriteList:
+        """Return the list owned by `user`, or raise 404 either way.
+
+        A list that exists but belongs to another customer is treated the
+        same as a missing one, so a customer probing IDs cannot tell the two
+        cases apart (no enumeration oracle for other customers' lists).
+        """
         favourite_list = await self._favourite_list_repository.find_by_id(list_id)
-        if favourite_list is None:
+        if favourite_list is None or favourite_list.owner_id != user.id:
             raise FavouriteListNotFoundError(f"Favourite list {list_id} not found")
         return favourite_list
 
@@ -157,11 +164,6 @@ class FavouriteListService:
             # Defensive: an authenticated customer is always a persisted user.
             raise ForbiddenError("Only customers can manage favourite lists")
         return user.id
-
-    @staticmethod
-    def _ensure_owner(user: User, favourite_list: FavouriteList) -> None:
-        if favourite_list.owner_id != user.id:
-            raise ForbiddenError("Customers can only manage their own favourite lists")
 
     @staticmethod
     def _validate_name(name: str) -> str:

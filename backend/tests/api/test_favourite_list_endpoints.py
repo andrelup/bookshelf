@@ -1,8 +1,8 @@
 """API tests for the favourite lists router: httpx.AsyncClient against the app.
 
 Covers status codes, the `{"success", "data", "error"}` envelope and
-authorization (401 unauthenticated, 403 for sellers and cross-customer
-access, 404/409 error translation).
+authorization (401 unauthenticated, 403 for sellers, 404 for cross-customer
+access, 409 error translation).
 """
 
 from collections.abc import Callable
@@ -157,7 +157,7 @@ async def test_get_list_when_missing_returns_404(
     assert response.json()["success"] is False
 
 
-async def test_get_list_when_another_customers_returns_403(
+async def test_get_list_when_another_customers_returns_404(
     client: httpx.AsyncClient,
     authenticated_as: Callable[[User], None],
     customer_user: User,
@@ -172,7 +172,7 @@ async def test_get_list_when_another_customers_returns_403(
     response = await client.get(f"/favourite-lists/{created['id']}")
 
     # Assert
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_rename_list_when_owner_returns_200(

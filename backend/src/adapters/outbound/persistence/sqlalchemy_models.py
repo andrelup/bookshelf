@@ -85,6 +85,8 @@ class FavouriteListItemORM(Base):
     list_id: Mapped[int] = mapped_column(
         ForeignKey("favourite_lists.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False, index=True)
+    book_id: Mapped[int] = mapped_column(
+        ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     favourite_list: Mapped["FavouriteListORM"] = relationship(back_populates="items")

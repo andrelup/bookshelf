@@ -51,7 +51,10 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["book_id"], ["books.id"], name="fk_favourite_list_items_book_id_books"
+            ["book_id"],
+            ["books.id"],
+            name="fk_favourite_list_items_book_id_books",
+            ondelete="CASCADE",
         ),
         sa.UniqueConstraint("list_id", "book_id", name="uq_favourite_list_items_list_book"),
     )
