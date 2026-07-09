@@ -37,3 +37,19 @@ class ForbiddenError(DomainError):
 
 class BookValidationError(DomainError):
     """Raised when book data violates a domain business rule."""
+
+
+class FavouriteListNotFoundError(DomainError):
+    """Raised when a requested favourite list does not exist."""
+
+
+class DuplicateFavouriteListNameError(DomainError):
+    """Raised when a customer already owns a favourite list with the same name."""
+
+
+class FavouriteListValidationError(DomainError):
+    """Raised when favourite list data violates a domain business rule."""
+
+
+class DuplicateFavouriteBookError(DomainError):
+    """Raised when adding a book already present in the favourite list."""

@@ -15,6 +15,10 @@ from src.domain.exceptions import (
     BookValidationError,
     DomainError,
     DuplicateEmailError,
+    DuplicateFavouriteBookError,
+    DuplicateFavouriteListNameError,
+    FavouriteListNotFoundError,
+    FavouriteListValidationError,
     ForbiddenError,
     InvalidCredentialsError,
     UnauthorizedError,
@@ -27,6 +31,10 @@ _STATUS_CODES: dict[type[DomainError], int] = {
     ForbiddenError: 403,
     DuplicateEmailError: 409,
     BookValidationError: 422,
+    FavouriteListNotFoundError: 404,
+    DuplicateFavouriteListNameError: 409,
+    DuplicateFavouriteBookError: 409,
+    FavouriteListValidationError: 422,
 }
 _DEFAULT_STATUS_CODE = 500
 

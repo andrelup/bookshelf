@@ -13,6 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.adapters.outbound.persistence.book_repository import SqlAlchemyBookRepository
 from src.adapters.outbound.persistence.database import get_db_session
+from src.adapters.outbound.persistence.favourite_list_repository import (
+    SqlAlchemyFavouriteListRepository,
+)
 from src.adapters.outbound.persistence.user_repository import SqlAlchemyUserRepository
 from src.adapters.outbound.security.jwt_token_service import JwtTokenService
 from src.adapters.outbound.security.password_hasher import BcryptPasswordHasher
@@ -21,6 +24,7 @@ from src.domain.ports.repositories import UserRepository
 from src.domain.ports.services import PasswordHasher, TokenService
 from src.domain.services.auth_service import AuthService
 from src.domain.services.book_service import BookService
+from src.domain.services.favourite_list_service import FavouriteListService
 
 
 def get_user_repository(session: AsyncSession = Depends(get_db_session)) -> UserRepository:
@@ -60,3 +64,17 @@ def get_auth_service(
 def get_book_service(session: AsyncSession = Depends(get_db_session)) -> BookService:
     """Build a `BookService` wired to the SQLAlchemy `BookRepository` implementation."""
     return BookService(SqlAlchemyBookRepository(session))
+
+
+def get_favourite_list_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> FavouriteListService:
+    """Build a `FavouriteListService` wired to its SQLAlchemy repositories.
+
+    Needs the book repository too, to validate that a book exists before it is
+    added to a list.
+    """
+    return FavouriteListService(
+        SqlAlchemyFavouriteListRepository(session),
+        SqlAlchemyBookRepository(session),
+    )
