@@ -28,7 +28,7 @@ from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from src.adapters.outbound.persistence.sqlalchemy_models import Base, UserORM
+from src.adapters.outbound.persistence.sqlalchemy_models import Base, BookORM, UserORM
 
 _CONTAINER_NAME = "bookshelf-books-crud-test-db"
 _HOST_PORT = 55433
@@ -41,6 +41,12 @@ _DATABASE_URL = f"postgresql+asyncpg://postgres:{_TEST_PASSWORD}@localhost:{_HOS
 # migration). `tests.factories.make_book` defaults to this id, so a matching
 # user row must exist before any book can be inserted.
 DEFAULT_SELLER_ID = 1
+
+# `favourite_list_items.book_id` has a physical FK to `books.id`, and
+# `favourite_lists.owner_id` to `users.id`. The favourite fixture seeds one of
+# each with these ids so a list (and its items) can be inserted.
+DEFAULT_OWNER_ID = 1
+DEFAULT_BOOK_ID = 1
 
 
 def _docker_available() -> bool:
@@ -117,6 +123,51 @@ async def book_db_session(postgres_container: None) -> AsyncGenerator[AsyncSessi
                 name="Default Test Seller",
                 role="seller",
                 hashed_password="not-a-real-hash",  # noqa: S106
+            )
+        )
+        await session.commit()
+        yield session
+
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
+
+
+@pytest.fixture
+async def favourite_db_session(postgres_container: None) -> AsyncGenerator[AsyncSession, None]:
+    """A fresh `AsyncSession` against clean tables for a single favourite-list test.
+
+    Seeds a customer (id=`DEFAULT_OWNER_ID`) so favourite lists satisfy the
+    `favourite_lists.owner_id` foreign key, and a book (id=`DEFAULT_BOOK_ID`,
+    owned by that user) so list items satisfy `favourite_list_items.book_id`.
+    """
+    engine = create_async_engine(_DATABASE_URL)
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_factory() as session:
+        session.add(
+            UserORM(
+                id=DEFAULT_OWNER_ID,
+                email="customer@example.com",
+                name="Default Test Customer",
+                role="customer",
+                hashed_password="not-a-real-hash",  # noqa: S106
+            )
+        )
+        await session.commit()
+        session.add(
+            BookORM(
+                id=DEFAULT_BOOK_ID,
+                title="Clean Architecture",
+                author="Robert C. Martin",
+                isbn="978-0134494166",
+                price=39.99,
+                stock=5,
+                seller_id=DEFAULT_OWNER_ID,
+                description="A craftsman's guide to software structure.",
+                category="Software Engineering",
             )
         )
         await session.commit()
