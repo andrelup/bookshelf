@@ -23,7 +23,7 @@ backend/
 │   │   ├── models/                # Entidades de dominio (dataclasses o Pydantic BaseModel)
 │   │   │   ├── user.py
 │   │   │   ├── book.py
-│   │   │   └── wishlist.py
+│   │   │   └── favourite.py
 │   │   ├── ports/                 # Interfaces (Protocol classes) que el dominio expone
 │   │   │   ├── repositories.py    # Ports de persistencia (UserRepository, BookRepository)
 │   │   │   └── services.py        # Ports de servicios externos (EmbeddingService, LLMService)
@@ -40,7 +40,7 @@ backend/
 │   │   │   │   ├── auth_router.py
 │   │   │   │   ├── book_router.py
 │   │   │   │   ├── search_router.py
-│   │   │   │   ├── wishlist_router.py
+│   │   │   │   ├── favourite_list_router.py
 │   │   │   │   └── health_router.py
 │   │   │   ├── schemas/           # Pydantic schemas (request/response de la API)
 │   │   │   │   ├── auth_schemas.py
