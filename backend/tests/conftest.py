@@ -10,12 +10,11 @@ The `users` table must already exist — run `alembic upgrade head`
 before running the integration/API test suite.
 """
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from collections.abc import AsyncIterator
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncSession,
@@ -69,6 +68,7 @@ async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, 
         yield client
     app.dependency_overrides.clear()
 
+
 @pytest.fixture
 def seller_user() -> User:
     """A seller who owns books used across tests as the default owner."""
@@ -104,7 +104,22 @@ def customer_user() -> User:
         hashed_password="not-a-real-hash",  # noqa: S106
     )
 
+
+@pytest.fixture
+def other_customer_user() -> User:
+    """A second, different customer — used to test cross-customer authorization."""
+    return User(
+        id=4,
+        email="other-customer@example.com",
+        name="Dave Customer",
+        role=UserRole.CUSTOMER,
+        hashed_password="not-a-real-hash",  # noqa: S106
+    )
+
+
 """Global fixtures shared by the whole test suite."""
+
+
 @pytest.fixture
 async def client() -> AsyncIterator[AsyncClient]:
     """HTTP client bound to the FastAPI app, without a running server."""
