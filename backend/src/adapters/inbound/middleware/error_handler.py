@@ -8,6 +8,7 @@ rules in `backend/CLAUDE.md`.
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from src.adapters.inbound.schemas.common import ApiResponse
 from src.domain.exceptions import (
@@ -47,3 +48,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         status_code = _STATUS_CODES.get(type(exc), _DEFAULT_STATUS_CODE)
         envelope = ApiResponse[None](success=False, data=None, error=str(exc))
         return JSONResponse(status_code=status_code, content=envelope.model_dump())
+
+    @app.exception_handler(IntegrityError)
+    async def _handle_integrity_error(_request: Request, _exc: IntegrityError) -> JSONResponse:
+        # A DB-level constraint (typically a UniqueConstraint) rejected the write after
+        # an in-memory availability check passed — a race between two concurrent requests.
+        # The domain-level Duplicate*Error only catches the non-concurrent case.
+        envelope = ApiResponse[None](
+            success=False, data=None, error="Conflict: the resource already exists"
+        )
+        return JSONResponse(status_code=409, content=envelope.model_dump())

@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 import httpx
 import pytest
 from fastapi import FastAPI
+from sqlalchemy.exc import IntegrityError
 from src.adapters.inbound.middleware.error_handler import register_exception_handlers
 from src.domain.exceptions import (
     BookNotFoundError,
@@ -49,6 +50,10 @@ def _make_app() -> FastAPI:
     async def unmapped() -> None:
         raise DomainError("Something went wrong")
 
+    @app.get("/integrity-error")
+    async def integrity_error() -> None:
+        raise IntegrityError("statement", {}, Exception("duplicate key value"))
+
     return app
 
 
@@ -69,6 +74,7 @@ async def client() -> AsyncGenerator[httpx.AsyncClient, None]:
         ("/duplicate-email", 409, "Email already registered"),
         ("/book-validation", 422, "Price must be greater than zero"),
         ("/unmapped", 500, "Something went wrong"),
+        ("/integrity-error", 409, "Conflict: the resource already exists"),
     ],
 )
 async def test_domain_error_handler_maps_each_exception_to_its_status(

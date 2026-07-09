@@ -122,7 +122,7 @@ async def test_get_when_missing_raises_not_found(
         await sut.get(customer_user, 999)
 
 
-async def test_get_when_another_customers_list_raises_forbidden(
+async def test_get_when_another_customers_list_raises_not_found(
     sut: FavouriteListService, customer_user: User, other_customer_user: User
 ) -> None:
     # Arrange
@@ -130,7 +130,7 @@ async def test_get_when_another_customers_list_raises_forbidden(
     assert created.id is not None
 
     # Act / Assert
-    with pytest.raises(ForbiddenError):
+    with pytest.raises(FavouriteListNotFoundError):
         await sut.get(other_customer_user, created.id)
 
 
@@ -176,7 +176,7 @@ async def test_rename_to_another_existing_name_raises_duplicate(
         await sut.rename(customer_user, created.id, "Gifts")
 
 
-async def test_rename_when_another_customers_list_raises_forbidden(
+async def test_rename_when_another_customers_list_raises_not_found(
     sut: FavouriteListService, customer_user: User, other_customer_user: User
 ) -> None:
     # Arrange
@@ -184,7 +184,7 @@ async def test_rename_when_another_customers_list_raises_forbidden(
     assert created.id is not None
 
     # Act / Assert
-    with pytest.raises(ForbiddenError):
+    with pytest.raises(FavouriteListNotFoundError):
         await sut.rename(other_customer_user, created.id, "Hijacked")
 
 
@@ -203,7 +203,7 @@ async def test_delete_when_owner_removes_list(
         await sut.get(customer_user, created.id)
 
 
-async def test_delete_when_another_customers_list_raises_forbidden(
+async def test_delete_when_another_customers_list_raises_not_found(
     sut: FavouriteListService, customer_user: User, other_customer_user: User
 ) -> None:
     # Arrange
@@ -211,7 +211,7 @@ async def test_delete_when_another_customers_list_raises_forbidden(
     assert created.id is not None
 
     # Act / Assert
-    with pytest.raises(ForbiddenError):
+    with pytest.raises(FavouriteListNotFoundError):
         await sut.delete(other_customer_user, created.id)
 
 
@@ -254,7 +254,7 @@ async def test_add_book_when_already_present_raises_duplicate(
         await sut.add_book(customer_user, created.id, 1)
 
 
-async def test_add_book_when_another_customers_list_raises_forbidden(
+async def test_add_book_when_another_customers_list_raises_not_found(
     sut: FavouriteListService, customer_user: User, other_customer_user: User
 ) -> None:
     # Arrange
@@ -262,7 +262,7 @@ async def test_add_book_when_another_customers_list_raises_forbidden(
     assert created.id is not None
 
     # Act / Assert
-    with pytest.raises(ForbiddenError):
+    with pytest.raises(FavouriteListNotFoundError):
         await sut.add_book(other_customer_user, created.id, 1)
 
 
@@ -295,7 +295,7 @@ async def test_remove_book_when_absent_is_noop(
     assert updated.book_ids == []
 
 
-async def test_remove_book_when_another_customers_list_raises_forbidden(
+async def test_remove_book_when_another_customers_list_raises_not_found(
     sut: FavouriteListService, customer_user: User, other_customer_user: User
 ) -> None:
     # Arrange
@@ -303,5 +303,5 @@ async def test_remove_book_when_another_customers_list_raises_forbidden(
     assert created.id is not None
 
     # Act / Assert
-    with pytest.raises(ForbiddenError):
+    with pytest.raises(FavouriteListNotFoundError):
         await sut.remove_book(other_customer_user, created.id, 1)
