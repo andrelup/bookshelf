@@ -46,6 +46,12 @@ La comunicación entre ambas zonas ocurre siempre a través de **ports**: interf
 
 El pegamento entre ports y adapters es la **inyección de dependencias** en `config/container.py`: el único módulo autorizado a importar de `domain/` y de `adapters/` a la vez para cablearlos.
 
+### La inversión de dependencias
+
+El mecanismo que hace posible todo lo anterior es la **inversión de dependencias** (la "D" de SOLID). En una arquitectura en capas tradicional, la dependencia sigue al flujo de ejecución: el servicio de negocio importa el repositorio concreto, que importa el driver de base de datos — el negocio acaba dependiendo de la infraestructura, y cualquier cambio en la BD se propaga hacia arriba. La arquitectura hexagonal invierte esa flecha: **el dominio define el contrato que necesita** (`BookRepository` en `domain/ports/repositories.py`) **y es la infraestructura quien se amolda a él** (`SqlAlchemyBookRepository` en `adapters/outbound/persistence/`). El flujo de ejecución sigue yendo del servicio hacia la base de datos, pero la dependencia en el código fuente apunta al revés: el adaptador depende del dominio, nunca al contrario.
+
+En la práctica, `BookService` declara en su constructor que necesita *algo que cumpla* el port (`book_repository: BookRepository`) sin conocer ninguna implementación, y `config/container.py` decide en el arranque qué implementación concreta inyectar. Como los ports son `typing.Protocol`, el adaptador no necesita heredar ni importar el contrato: mypy verifica **estructuralmente** que lo cumple justo en el punto de cableado (`BookService(SqlAlchemyBookRepository(session))` en `container.py`) — si a la implementación le falta un método o cambia una firma, el type checker falla ahí antes de llegar a ejecutarse. Esta inversión es la que permite testear el dominio con fakes en memoria (`tests/fakes/fake_book_repository.py`) y la que haría posible cambiar PostgreSQL por otra tecnología tocando solo el adaptador.
+
 ---
 
 ## 2. El hexágono en este repositorio
