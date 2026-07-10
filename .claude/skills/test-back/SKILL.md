@@ -1,54 +1,54 @@
 ---
 name: test-back
-description: Escribe y ejecuta tests del backend (pytest). Decide si toca test unitario, de integración o de API según la capa hexagonal modificada, escribe los tests siguiendo AAA y verifica coverage mínimo del 80%. Usar tras implementar o modificar código en backend/, o cuando el usuario pida tests para el backend.
+description: Writes and runs the backend tests (pytest). Decides whether a unit, integration or API test is needed based on the hexagonal layer that changed, writes the tests following AAA, and verifies the 80% minimum coverage. Use after implementing or modifying code in backend/, or when the user asks for backend tests.
 ---
 
-# Tests del backend
+# Backend tests
 
-Escribe tests para el código de `backend/` siguiendo las convenciones del proyecto y verifica que la suite pasa con coverage ≥ 80%.
+Write tests for the code in `backend/` following the project conventions, and verify that the suite passes with coverage ≥ 80%.
 
-## Paso 1 — Identificar qué se testea
+## Step 1 — Identify what is being tested
 
-Determina qué archivos de `backend/src/` son el objetivo: los modificados en la conversación actual, los indicados por el usuario, o (si no hay contexto) los cambiados según `git diff` / `git status`.
+Determine which files under `backend/src/` are the target: the ones modified in the current conversation, the ones the user named, or (if there is no context) the ones changed according to `git diff` / `git status`.
 
-## Paso 2 — Decidir el tipo de test según la capa
+## Step 2 — Decide the test type based on the layer
 
-El tipo de test se deriva de la capa hexagonal. Un mismo cambio puede requerir tests en más de una capa:
+The test type follows from the hexagonal layer. A single change may require tests in more than one layer:
 
-| Capa modificada | Tipo de test | Ubicación | Estrategia |
+| Layer modified | Test type | Location | Strategy |
 |---|---|---|---|
-| `domain/services/`, `domain/models/` | Unitario | `tests/unit/` | Mockear los ports (Protocol classes). Sin DB, sin FastAPI, sin I/O. |
-| `adapters/outbound/persistence/` | Integración | `tests/integration/` | DB real de test (fixture de `conftest.py`). Verificar el repositorio contra PostgreSQL. |
-| `adapters/inbound/api/` (routers, schemas, middleware) | API | `tests/api/` | `httpx.AsyncClient` contra la app FastAPI. Verificar status codes, formato `{"success", "data", "error"}` y validación de schemas. |
+| `domain/services/`, `domain/models/` | Unit | `tests/unit/` | Mock the ports (Protocol classes). No DB, no FastAPI, no I/O. |
+| `adapters/outbound/persistence/` | Integration | `tests/integration/` | Real test DB (fixture from `conftest.py`). Verify the repository against PostgreSQL. |
+| `adapters/inbound/api/` (routers, schemas, middleware) | API | `tests/api/` | `httpx.AsyncClient` against the FastAPI app. Verify status codes, the `{"success", "data", "error"}` format, and schema validation. |
 
-Reglas de decisión:
+Decision rules:
 
-- Un endpoint nuevo normalmente necesita **dos** tests: unitario para la lógica del servicio de dominio + API para el router. El router no lleva lógica, así que su test cubre wiring, validación y traducción de errores (404, 401, 422).
-- Un repositorio nuevo necesita test de **integración**; no mockees SQLAlchemy en un test unitario para "cubrir" un repositorio.
-- Las excepciones de dominio se testean en unitario (que el servicio las lanza) y en API (que el middleware las traduce al HTTP status correcto).
-- `config/` y `main.py` no necesitan tests dedicados salvo lógica propia.
+- A new endpoint normally needs **two** tests: a unit test for the domain service logic + an API test for the router. The router carries no logic, so its test covers wiring, validation and error translation (404, 401, 422).
+- A new repository needs an **integration** test; do not mock SQLAlchemy in a unit test to "cover" a repository.
+- Domain exceptions are tested at the unit level (that the service raises them) and at the API level (that the middleware translates them to the right HTTP status).
+- `config/` and `main.py` do not need dedicated tests unless they carry logic of their own.
 
-## Paso 3 — Escribir los tests
+## Step 3 — Write the tests
 
-- Patrón AAA con comentarios explícitos `# Arrange`, `# Act`, `# Assert`.
-- Reutilizar fixtures de `tests/conftest.py` (test DB, async client, usuarios customer/seller autenticados). Si falta una fixture claramente reutilizable, añadirla a `conftest.py`, no duplicarla en el archivo de test.
-- `pytest-asyncio` para todo lo async.
-- Nombres descriptivos: `test_<funcion>_<escenario>_<resultado>` (ej. `test_find_by_id_when_book_missing_returns_none`).
-- Código e identificadores en inglés. Type hints obligatorios (mypy strict también aplica a tests).
-- Cubrir el camino feliz, los casos de error de dominio y los bordes de validación — no solo el happy path.
+- AAA pattern with explicit `# Arrange`, `# Act`, `# Assert` comments.
+- Reuse fixtures from `tests/conftest.py` (test DB, async client, authenticated customer/seller users). If a clearly reusable fixture is missing, add it to `conftest.py` rather than duplicating it in the test file.
+- `pytest-asyncio` for everything async.
+- Descriptive names: `test_<function>_<scenario>_<result>` (e.g. `test_find_by_id_when_book_missing_returns_none`).
+- Code and identifiers in English. Type hints mandatory (mypy strict applies to tests too).
+- Cover the happy path, the domain error cases and the validation edges — not just the happy path.
 
-## Paso 4 — Ejecutar y verificar
+## Step 4 — Run and verify
 
-Desde `backend/`:
+From `backend/`:
 
 ```
 pytest --cov=src --cov-report=term-missing
 ```
 
-- Si hay fallos: diagnosticar y corregir (el test si está mal planteado, el código si el test revela un bug — en ese caso avisar al usuario del bug encontrado).
-- Si el coverage de los módulos tocados baja del 80%: añadir casos para las líneas sin cubrir que muestra `term-missing`, priorizando ramas de error.
-- Los tests de integración/API requieren la DB de test levantada; si falla la conexión, levantar el entorno con `make dev` (desde la raíz) antes de reintentar.
+- If there are failures: diagnose and fix (the test if it is poorly framed, the code if the test reveals a bug — in that case tell the user about the bug found).
+- If coverage of the modules touched drops below 80%: add cases for the uncovered lines that `term-missing` reports, prioritizing error branches.
+- Integration/API tests need the test DB up; if the connection fails, bring the environment up with `make dev` (from the root) before retrying.
 
-## Paso 5 — Reportar
+## Step 5 — Report
 
-Resumir al usuario: tests añadidos por tipo, resultado de la suite y coverage final en modo tabla que es más visual. Si se dejó algo sin cubrir deliberadamente, decirlo explícitamente.
+Summarize for the user: tests added by type, suite result, and final coverage as a table, which is more visual. If something was deliberately left uncovered, say so explicitly.

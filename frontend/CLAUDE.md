@@ -1,42 +1,42 @@
 # BookShelf Frontend — Bulletproof React Architecture
 
-SPA para tienda de libros. Este CLAUDE.md complementa el CLAUDE.md raíz del monorepo.
+SPA for a bookstore. This CLAUDE.md complements the monorepo root CLAUDE.md.
 
 ## Stack
 
 - React 18
 - TypeScript (strict mode)
 - Vite (build + dev server)
-- TailwindCSS (estilos)
+- TailwindCSS (styling)
 - React Router v6 (routing)
 - Vitest + React Testing Library (testing)
 - Playwright (E2E)
 - ESLint + Prettier (linting + formatting)
 
-## Arquitectura Bulletproof React
+## Bulletproof React Architecture
 
 ```
 frontend/
 ├── src/
-│   ├── app/                       # Entrypoint, providers globales, router
-│   │   ├── App.tsx                # Componente raíz
+│   ├── app/                       # Entrypoint, global providers, router
+│   │   ├── App.tsx                # Root component
 │   │   ├── providers.tsx          # AuthProvider, QueryProvider, etc.
-│   │   └── router.tsx             # Definición de rutas con React Router v6
+│   │   └── router.tsx             # Route definitions with React Router v6
 │   │
-│   ├── features/                  # MÓDULOS DE DOMINIO — cada feature es autónomo
+│   ├── features/                  # DOMAIN MODULES — each feature is autonomous
 │   │   ├── auth/
-│   │   │   ├── api/               # Llamadas al backend (login, register, logout)
+│   │   │   ├── api/               # Backend calls (login, register, logout)
 │   │   │   │   └── auth-api.ts
-│   │   │   ├── components/        # Componentes exclusivos de auth
+│   │   │   ├── components/        # Components exclusive to auth
 │   │   │   │   ├── LoginForm.tsx
 │   │   │   │   ├── RegisterForm.tsx
 │   │   │   │   └── ProtectedRoute.tsx
-│   │   │   ├── hooks/             # Hooks de auth
+│   │   │   ├── hooks/             # Auth hooks
 │   │   │   │   ├── useAuth.ts
 │   │   │   │   └── useLogin.ts
-│   │   │   ├── types/             # Tipos TypeScript de auth
+│   │   │   ├── types/             # Auth TypeScript types
 │   │   │   │   └── index.ts
-│   │   │   └── index.ts           # Public API del feature (re-exports)
+│   │   │   └── index.ts           # Feature public API (re-exports)
 │   │   │
 │   │   ├── books/
 │   │   │   ├── api/
@@ -70,8 +70,8 @@ frontend/
 │   │       ├── types/
 │   │       └── index.ts
 │   │
-│   ├── components/                # Componentes COMPARTIDOS (UI genérica reutilizable)
-│   │   ├── ui/                    # Primitivos: Button, Input, Modal, Card, Spinner
+│   ├── components/                # SHARED components (generic reusable UI)
+│   │   ├── ui/                    # Primitives: Button, Input, Modal, Card, Spinner
 │   │   │   ├── Button.tsx
 │   │   │   ├── Input.tsx
 │   │   │   ├── Modal.tsx
@@ -82,22 +82,22 @@ frontend/
 │   │       ├── Footer.tsx
 │   │       └── PageContainer.tsx
 │   │
-│   ├── hooks/                     # Hooks COMPARTIDOS (genéricos, no de un feature)
-│   │   ├── useApi.ts              # Wrapper de fetch con auth header y error handling
+│   ├── hooks/                     # SHARED hooks (generic, not feature-specific)
+│   │   ├── useApi.ts              # fetch wrapper with auth header and error handling
 │   │   ├── useDebounce.ts
 │   │   └── useLocalStorage.ts
 │   │
-│   ├── lib/                       # Configuración de librerías externas
-│   │   └── api-client.ts          # Instancia base de fetch/axios con baseURL y interceptors
+│   ├── lib/                       # External library configuration
+│   │   └── api-client.ts          # Base fetch/axios instance with baseURL and interceptors
 │   │
-│   ├── types/                     # Tipos globales compartidos
+│   ├── types/                     # Shared global types
 │   │   └── api.ts                 # ApiResponse<T>, PaginatedResponse<T>, etc.
 │   │
-│   └── utils/                     # Funciones helper puras (sin side effects)
+│   └── utils/                     # Pure helper functions (no side effects)
 │       ├── format-price.ts
 │       └── validate-isbn.ts
 │
-├── e2e/                           # Tests E2E con Playwright
+├── e2e/                           # E2E tests with Playwright
 │   ├── tests/
 │   │   ├── auth.spec.ts
 │   │   ├── books.spec.ts
@@ -118,13 +118,13 @@ frontend/
 └── Dockerfile
 ```
 
-## Reglas de Arquitectura Bulletproof React
+## Bulletproof React Architecture rules
 
-1. **Cada feature es un módulo autónomo.** Tiene su propia carpeta con api/, components/, hooks/, types/ y un `index.ts` que actúa como public API.
+1. **Every feature is an autonomous module.** It has its own folder with api/, components/, hooks/, types/ and an `index.ts` that acts as its public API.
 
-2. **Un feature NO importa directamente de otro feature.** Si `wishlist` necesita el tipo `Book`, ese tipo debe estar en `types/` global o el feature `books` debe exportarlo en su `index.ts` y `wishlist` importa desde `@/features/books`.
+2. **A feature does NOT import directly from another feature.** If `wishlist` needs the `Book` type, that type must live in the global `types/`, or the `books` feature must export it from its `index.ts` and `wishlist` imports it from `@/features/books`.
 
-3. **El `index.ts` de cada feature es su contrato público.** Solo lo que se exporta ahí es accesible desde fuera:
+3. **Each feature's `index.ts` is its public contract.** Only what is exported there is accessible from outside:
    ```typescript
    // features/auth/index.ts
    export { LoginForm } from './components/LoginForm';
@@ -134,21 +134,21 @@ frontend/
    export type { User, LoginCredentials } from './types';
    ```
 
-4. **Los componentes de `components/` raíz son UI genérica** sin lógica de negocio: Button, Input, Modal, Card, Spinner. No importan de ningún feature.
+4. **Components in the root `components/` are generic UI** with no business logic: Button, Input, Modal, Card, Spinner. They import from no feature.
 
-5. **Los hooks de `hooks/` raíz son genéricos** y reutilizables en cualquier feature: useApi, useDebounce, useLocalStorage. No contienen lógica de negocio.
+5. **Hooks in the root `hooks/` are generic** and reusable in any feature: useApi, useDebounce, useLocalStorage. They contain no business logic.
 
-6. **`app/` solo contiene wiring:** providers, router, y el componente raíz. No contiene componentes de UI ni lógica de negocio.
+6. **`app/` contains wiring only:** providers, router, and the root component. It contains no UI components and no business logic.
 
-## Convenciones de código
+## Code conventions
 
-- Functional components con hooks. No class components.
-- PascalCase para componentes: `BookCard.tsx`, `LoginForm.tsx`
-- camelCase para hooks: `useAuth.ts`, `useBooks.ts`
-- kebab-case para archivos de utilidades y API: `books-api.ts`, `format-price.ts`
-- TypeScript strict mode obligatorio. No usar `any` — usar `unknown` y narrowing.
-- Named exports siempre. No default exports (excepto páginas para lazy loading).
-- Props definidas con `interface`, no `type`:
+- Functional components with hooks. No class components.
+- PascalCase for components: `BookCard.tsx`, `LoginForm.tsx`
+- camelCase for hooks: `useAuth.ts`, `useBooks.ts`
+- kebab-case for utility and API files: `books-api.ts`, `format-price.ts`
+- TypeScript strict mode is mandatory. Do not use `any` — use `unknown` and narrowing.
+- Named exports always. No default exports (except pages, for lazy loading).
+- Props defined with `interface`, not `type`:
   ```typescript
   interface BookCardProps {
     book: Book;
@@ -160,67 +160,67 @@ frontend/
   };
   ```
 
-## Estado
+## State
 
-- **React Context** para auth (usuario logueado, token). Provider en `app/providers.tsx`.
-- **Estado local** (`useState`, `useReducer`) para todo lo demás. No meter Redux ni Zustand.
-- **Datos del servidor** gestionados con el hook `useApi` (fetch + estado de loading/error/data).
-- Si un estado es necesario en más de un feature → elevarlo a Context o moverlo a un hook compartido.
+- **React Context** for auth (logged-in user, token). Provider in `app/providers.tsx`.
+- **Local state** (`useState`, `useReducer`) for everything else. Do not add Redux or Zustand.
+- **Server data** handled with the `useApi` hook (fetch + loading/error/data state).
+- If a piece of state is needed in more than one feature → lift it to Context or move it to a shared hook.
 
-## Estilos
+## Styling
 
-- TailwindCSS para todos los estilos. No CSS modules, no styled-components, no CSS en línea.
-- Clases de Tailwind directamente en el JSX.
-- Para variantes de componentes, usar lógica condicional con template literals:
+- TailwindCSS for all styling. No CSS modules, no styled-components, no inline CSS.
+- Tailwind classes directly in the JSX.
+- For component variants, use conditional logic with template literals:
   ```typescript
   const buttonClass = `px-4 py-2 rounded ${variant === 'primary' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`;
   ```
-- No crear archivos `.css` salvo `index.css` con las directivas de Tailwind.
+- Do not create `.css` files other than `index.css` with the Tailwind directives.
 
 ## API Client
 
-- Un único `api-client.ts` en `lib/` con la configuración base:
+- A single `api-client.ts` in `lib/` with the base configuration:
   ```typescript
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   ```
-- Todas las llamadas al backend pasan por este client.
-- El token JWT se inyecta automáticamente desde el AuthContext.
-- Respuestas tipadas con generics: `ApiResponse<Book>`, `ApiResponse<Book[]>`.
+- Every backend call goes through this client.
+- The JWT token is injected automatically from the AuthContext.
+- Responses typed with generics: `ApiResponse<Book>`, `ApiResponse<Book[]>`.
 
 ## Testing
 
 - **Unit tests:** Vitest + React Testing Library
-- **E2E tests:** Playwright con Page Object Model
-- Colocación: tests unitarios junto al componente (`BookCard.test.tsx` junto a `BookCard.tsx`)
-- Testear comportamiento, no implementación. Usar `getByRole`, `getByText`, no `getByTestId`.
-- Ejecutar: `npx vitest run --coverage`
+- **E2E tests:** Playwright with the Page Object Model
+- Colocation: unit tests next to the component (`BookCard.test.tsx` next to `BookCard.tsx`)
+- Test behavior, not implementation. Use `getByRole`, `getByText`, not `getByTestId`.
+- Run: `npx vitest run --coverage`
 
 ## Routing
 
-- React Router v6 con rutas definidas en `app/router.tsx`
-- Lazy loading para páginas principales:
+- React Router v6 with routes defined in `app/router.tsx`
+- Lazy loading for the main pages:
   ```typescript
   const BookDetail = lazy(() => import('@/features/books/components/BookDetail'));
   ```
-- Rutas protegidas con `ProtectedRoute` component de `features/auth`
-- Rutas de seller separadas con su propio layout
+- Protected routes with the `ProtectedRoute` component from `features/auth`
+- Seller routes kept separate with their own layout
 
-## Path Aliases
+## Path aliases
 
-- `@/` apunta a `src/`:
+- `@/` points to `src/`:
   ```typescript
   import { BookCard } from '@/features/books';
   import { Button } from '@/components/ui/Button';
   import { useApi } from '@/hooks/useApi';
   ```
-- Configurado en `tsconfig.json` y `vite.config.ts`
+- Configured in `tsconfig.json` and `vite.config.ts`
 
-## Qué NO hacer
+## What NOT to do
 
-- No importar componentes internos de un feature desde fuera — solo lo que exporta `index.ts`
-- No poner lógica de negocio en `components/` raíz — esos son UI puros
-- No usar `any` — usar `unknown` con type guards
-- No crear archivos CSS individuales — usar Tailwind
-- No usar `useEffect` para fetch de datos — usar el hook `useApi` que ya maneja loading/error
-- No meter estado global (Context) para datos que solo usa un feature
-- No hacer fetch directo con `window.fetch` — siempre a través de `lib/api-client.ts`
+- Do not import a feature's internal components from outside — only what its `index.ts` exports
+- Do not put business logic in the root `components/` — those are pure UI
+- Do not use `any` — use `unknown` with type guards
+- Do not create individual CSS files — use Tailwind
+- Do not use `useEffect` to fetch data — use the `useApi` hook, which already handles loading/error
+- Do not put global state (Context) in place for data that only one feature uses
+- Do not fetch directly with `window.fetch` — always go through `lib/api-client.ts`
