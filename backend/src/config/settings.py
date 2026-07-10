@@ -4,10 +4,11 @@ Importing this module must never trigger a database connection or
 any other side effect.
 """
 
+from typing import Annotated
 from urllib.parse import quote_plus
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -30,7 +31,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     # Origins allowed to call the API from a browser (CORS). Comma-separated
     # in the .env file, e.g. "http://localhost:3000,http://localhost:5173".
-    cors_allowed_origins: list[str] = ["http://localhost:3000"]
+    # NoDecode disables pydantic-settings' JSON decoding for this env var so
+    # the plain comma-separated string reaches _split_cors_origins below;
+    # without it a non-JSON value raises SettingsError at startup.
+    cors_allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
     # Required on purpose: the JWT signing secret must come from the
     # environment, never hardcoded.

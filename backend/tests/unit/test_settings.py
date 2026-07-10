@@ -120,3 +120,16 @@ def test_cors_allowed_origins_ignores_blank_entries() -> None:
 
     # Assert
     assert settings.cors_allowed_origins == ["http://a.com"]
+
+
+def test_cors_allowed_origins_parsed_from_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Arrange — the real EnvSettingsSource path (a CORS_ALLOWED_ORIGINS env var),
+    # which crashed the container: a complex list[str] field is JSON-decoded by
+    # the env source before the validator runs. NoDecode must keep it working.
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000, https://foo.com")
+
+    # Act — _env_file=None only disables the .env file, not the process env source
+    settings = Settings(_env_file=None, jwt_secret_key="x", db_password="secret")  # type: ignore[call-arg]
+
+    # Assert
+    assert settings.cors_allowed_origins == ["http://localhost:3000", "https://foo.com"]
