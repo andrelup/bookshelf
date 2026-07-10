@@ -1,73 +1,73 @@
-# BookShelf — Tienda de libros con IA
+# BookShelf — AI-powered bookstore
 
-Monorepo con backend Python y frontend React. Proyecto de formación en Claude Code y desarrollo agéntico.
+Monorepo with a Python backend and a React frontend. Training project on Claude Code and agentic development.
 
-## Estructura del repositorio
+## Repository structure
 
 ```
 bookshelf/
-├── backend/          # API REST — Python 3.12, FastAPI, Hexagonal Architecture
+├── backend/          # REST API — Python 3.12, FastAPI, Hexagonal Architecture
 ├── frontend/         # SPA — React 18, TypeScript, Bulletproof React Architecture
 ├── infra/            # Docker Compose, Prometheus, Grafana, SonarQube
-├── .claude/          # Subagentes y slash commands
+├── .claude/          # Subagents and slash commands
 ├── .github/          # GitHub Actions workflows
-└── Makefile          # Comandos unificados del proyecto
+└── Makefile          # Unified project commands
 ```
 
-Cada subdirectorio (`backend/`, `frontend/`) tiene su propio CLAUDE.md con convenciones específicas de su stack. Este archivo solo contiene reglas globales compartidas.
+Each subdirectory (`backend/`, `frontend/`) has its own CLAUDE.md with conventions specific to its stack. This file only contains shared global rules.
 
-## Convenciones globales
+## Global conventions
 
-- Idioma del código: inglés (variables, funciones, clases, comentarios)
-- Idioma de documentación: español
-- Type hints / tipos estrictos obligatorios en ambos stacks
-- Todo el código debe tener tests. Coverage mínimo: 80%
+- Code language: English (variables, functions, classes, comments)
+- Documentation language: Spanish
+- Type hints / strict types are mandatory in both stacks
+- All code must have tests. Minimum coverage: 80%
 
 ## Git
 
-- Conventional commits obligatorios: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`
-- Scope del commit indica el módulo: `feat(backend): add book search endpoint`, `fix(frontend): fix login redirect`
-- Una rama por feature: `feature/nombre-corto`
-- PRs contra `main`, siempre con tests pasando
+- Conventional commits are mandatory: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`
+- The commit scope indicates the module: `feat(backend): add book search endpoint`, `fix(frontend): fix login redirect`
+- One branch per feature: `feature/short-name`
+- PRs against `main`, always with passing tests
 
 ## Docker
 
-- `docker-compose.yml` en `infra/` levanta todo el entorno
-- Servicios: PostgreSQL 16, backend FastAPI, frontend React (dev), Prometheus, Grafana
-- Dockerfiles multi-stage en cada subdirectorio (`backend/Dockerfile`, `frontend/Dockerfile`)
-- Hot reload habilitado en desarrollo vía volúmenes
+- `docker-compose.yml` in `infra/` brings up the whole environment
+- Services: PostgreSQL 16, FastAPI backend, React frontend (dev), Prometheus, Grafana
+- Multi-stage Dockerfiles in each subdirectory (`backend/Dockerfile`, `frontend/Dockerfile`)
+- Hot reload enabled in development via volumes
 
-## Makefile (raíz)
+## Makefile (root)
 
-Todos los comandos se ejecutan desde la raíz del monorepo:
+All commands run from the monorepo root:
 
 ```
-make dev          → docker compose up (todo el entorno)
-make test         → tests backend + frontend
-make test-back    → solo tests backend
-make test-front   → solo tests frontend
+make dev          → docker compose up (whole environment)
+make test         → backend + frontend tests
+make test-back    → backend tests only
+make test-front   → frontend tests only
 make test-e2e     → playwright tests
-make lint         → linters backend + frontend
+make lint         → backend + frontend linters
 make migrate      → alembic upgrade head
-make seed         → script de seed de datos
-make build        → docker build de ambas imágenes
+make seed         → data seeding script
+make build        → docker build of both images
 ```
 
-## Secretos y configuración
+## Secrets and configuration
 
-- Variables de entorno en `.env` (no versionado)
-- `.env.example` versionado con todas las variables necesarias y valores de ejemplo
-- Nunca hardcodear secrets, URLs de base de datos, API keys ni tokens en el código
+- Environment variables in `.env` (not versioned)
+- `.env.example` is versioned, with every required variable and example values
+- Never hardcode secrets, database URLs, API keys or tokens in the code
 
 ## CI/CD
 
-- GitHub Actions en `.github/workflows/`
+- GitHub Actions in `.github/workflows/`
 - Pipeline: lint → test-backend → test-frontend → test-e2e → build → security-scan
-- SonarQube como quality gate en PRs
+- SonarQube as the quality gate on PRs
 
-## Qué NO hacer
+## What NOT to do
 
-- No importar código directamente entre `backend/` y `frontend/` — son proyectos independientes conectados por API REST
-- No instalar dependencias globales — cada subdirectorio gestiona las suyas
-- No hacer commits sin que los pre-commit hooks pasen
-- No usar `print()` para debugging — usar el sistema de logging configurado (structlog en backend)
+- Do not import code directly between `backend/` and `frontend/` — they are independent projects connected by a REST API
+- Do not install global dependencies — each subdirectory manages its own
+- Do not commit without the pre-commit hooks passing
+- Do not use `print()` for debugging — use the configured logging system (structlog in the backend)
