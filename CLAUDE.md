@@ -30,6 +30,13 @@ Each subdirectory (`backend/`, `frontend/`) has its own CLAUDE.md with conventio
 - One branch per feature: `feature/short-name`
 - PRs against `main`, always with passing tests
 
+### Issue-driven workflow
+
+Every task originates from a GitHub issue. Always link the work back to the issue so closing it also closes the PR and deletes the branch automatically:
+
+- Create the feature branch from the issue (e.g. `gh issue develop <issue-number> --checkout`) so the branch is linked to the issue
+- When opening the PR, link it to the issue with a closing keyword in the PR body (`Closes #<issue-number>`) so merging the PR closes the issue, and closing the issue removes the associated PR and branch
+
 ## Docker
 
 - `docker-compose.yml` in `infra/` brings up the whole environment
