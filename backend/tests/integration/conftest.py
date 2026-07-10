@@ -48,6 +48,11 @@ DEFAULT_SELLER_ID = 1
 DEFAULT_OWNER_ID = 1
 DEFAULT_BOOK_ID = 1
 
+# A second catalog book, seeded alongside `DEFAULT_BOOK_ID` by the two-session
+# fixtures below so two concurrent writers can each add a *different* book to
+# the same favourite list without colliding on the same item row.
+SECOND_BOOK_ID = 2
+
 
 def _docker_available() -> bool:
     return shutil.which("docker") is not None
@@ -176,3 +181,125 @@ async def favourite_db_session(postgres_container: None) -> AsyncGenerator[Async
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest.fixture
+async def two_book_sessions(
+    postgres_container: None,
+) -> AsyncGenerator[tuple[AsyncSession, AsyncSession], None]:
+    """Two independent `AsyncSession`s on the same engine, sharing one seeded book.
+
+    Used to exercise `BookORM`'s optimistic locking (`version_id_col`): both
+    sessions load the same row (id=`DEFAULT_BOOK_ID`), so a `save()` from one
+    after the other has already committed must raise `StaleDataError`.
+    """
+    engine = create_async_engine(_DATABASE_URL)
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_factory() as seed_session:
+        seed_session.add(
+            UserORM(
+                id=DEFAULT_SELLER_ID,
+                email="seller@example.com",
+                name="Default Test Seller",
+                role="seller",
+                hashed_password="not-a-real-hash",  # noqa: S106
+            )
+        )
+        await seed_session.commit()
+        seed_session.add(
+            BookORM(
+                id=DEFAULT_BOOK_ID,
+                title="Clean Architecture",
+                author="Robert C. Martin",
+                isbn="978-0134494166",
+                price=39.99,
+                stock=5,
+                seller_id=DEFAULT_SELLER_ID,
+                description="A craftsman's guide to software structure.",
+                category="Software Engineering",
+            )
+        )
+        await seed_session.commit()
+
+    session_one = session_factory()
+    session_two = session_factory()
+    try:
+        yield session_one, session_two
+    finally:
+        await session_one.close()
+        await session_two.close()
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.drop_all)
+        await engine.dispose()
+
+
+@pytest.fixture
+async def two_favourite_sessions(
+    postgres_container: None,
+) -> AsyncGenerator[tuple[AsyncSession, AsyncSession], None]:
+    """Two independent `AsyncSession`s on the same engine, sharing seeded parent rows.
+
+    Seeds a customer (id=`DEFAULT_OWNER_ID`) plus two catalog books
+    (`DEFAULT_BOOK_ID` and `SECOND_BOOK_ID`) so each session can create/add a
+    *different* book to the same favourite list, exercising
+    `FavouriteListORM`'s optimistic locking (`version_id_col`) even though
+    item-only changes don't otherwise touch the parent row (see
+    `SqlAlchemyFavouriteListRepository.save`'s `flag_modified` call).
+    """
+    engine = create_async_engine(_DATABASE_URL)
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_factory() as seed_session:
+        seed_session.add(
+            UserORM(
+                id=DEFAULT_OWNER_ID,
+                email="customer@example.com",
+                name="Default Test Customer",
+                role="customer",
+                hashed_password="not-a-real-hash",  # noqa: S106
+            )
+        )
+        await seed_session.commit()
+        seed_session.add_all(
+            [
+                BookORM(
+                    id=DEFAULT_BOOK_ID,
+                    title="Clean Architecture",
+                    author="Robert C. Martin",
+                    isbn="978-0134494166",
+                    price=39.99,
+                    stock=5,
+                    seller_id=DEFAULT_OWNER_ID,
+                    description="A craftsman's guide to software structure.",
+                    category="Software Engineering",
+                ),
+                BookORM(
+                    id=SECOND_BOOK_ID,
+                    title="Refactoring",
+                    author="Martin Fowler",
+                    isbn="978-0134757599",
+                    price=47.99,
+                    stock=3,
+                    seller_id=DEFAULT_OWNER_ID,
+                    description="Improving the design of existing code.",
+                    category="Software Engineering",
+                ),
+            ]
+        )
+        await seed_session.commit()
+
+    session_one = session_factory()
+    session_two = session_factory()
+    try:
+        yield session_one, session_two
+    finally:
+        await session_one.close()
+        await session_two.close()
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.drop_all)
+        await engine.dispose()
