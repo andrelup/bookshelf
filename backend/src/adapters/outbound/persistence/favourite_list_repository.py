@@ -2,6 +2,7 @@
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import attributes
 
 from src.adapters.outbound.persistence.sqlalchemy_models import (
     FavouriteListItemORM,
@@ -16,6 +17,7 @@ def _to_domain(list_orm: FavouriteListORM) -> FavouriteList:
         owner_id=list_orm.owner_id,
         name=list_orm.name,
         book_ids=[item.book_id for item in list_orm.items],
+        version=list_orm.version,
     )
 
 
@@ -64,8 +66,23 @@ class SqlAlchemyFavouriteListRepository:
             list_orm = await self._session.get(FavouriteListORM, favourite_list.id)
             if list_orm is None:
                 raise ValueError(f"Favourite list {favourite_list.id} not found for update")
+            # Assert the caller's loaded version, not the row's freshly-read
+            # one: `find_by_id` returns a detached domain object and discards
+            # the ORM, so this `get()` re-reads the current row (the identity
+            # map holds instances weakly). Overriding the committed version
+            # with what the caller loaded makes `version_id_col` emit
+            # `WHERE version = <loaded>`, so a stale write raises
+            # `StaleDataError` instead of silently clobbering a concurrent one.
+            attributes.set_committed_value(list_orm, "version", favourite_list.version)
             list_orm.name = favourite_list.name
             _reconcile_items(list_orm, favourite_list.book_ids)
+            # `version_id_col` only bumps on an UPDATE emitted against this row.
+            # Adding/removing items only emits INSERT/DELETE on
+            # `favourite_list_items`, which never touches `favourite_lists` —
+            # so an item-only change wouldn't otherwise trigger the version
+            # check. Flagging `name` as modified (even when unchanged) forces
+            # SQLAlchemy to emit an UPDATE on the parent row too.
+            attributes.flag_modified(list_orm, "name")
         else:
             list_orm = FavouriteListORM(
                 owner_id=favourite_list.owner_id,
