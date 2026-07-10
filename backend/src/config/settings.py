@@ -6,6 +6,7 @@ any other side effect.
 
 from urllib.parse import quote_plus
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,12 +28,23 @@ class Settings(BaseSettings):
     db_password: str
     db_name: str = "bookshelf"
     log_level: str = "INFO"
+    # Origins allowed to call the API from a browser (CORS). Comma-separated
+    # in the .env file, e.g. "http://localhost:3000,http://localhost:5173".
+    cors_allowed_origins: list[str] = ["http://localhost:3000"]
 
     # Required on purpose: the JWT signing secret must come from the
     # environment, never hardcoded.
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_access_token_expires_minutes: int = 60
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def _split_cors_origins(cls, value: object) -> object:
+        """Parse a comma-separated CORS_ALLOWED_ORIGINS string from the environment."""
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
 
     @property
     def database_url(self) -> str:
