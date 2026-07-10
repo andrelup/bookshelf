@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useApi } from '@/hooks/useApi';
@@ -11,14 +12,20 @@ export const RegisterForm = () => {
   const [password, setPassword] = useState('');
   const [role] = useState<UserRole>('customer');
   const { execute, isLoading, error } = useApi(registerUser);
+  const navigate = useNavigate();
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    void execute({ email, name, password, role });
+    const result = await execute({ email, name, password, role });
+    if (result !== null) {
+      // Registration only creates the account — there is no session to
+      // start yet, so the user must log in explicitly.
+      navigate('/login', { replace: true });
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4" noValidate>
       <Input
         label="Name"
         type="text"
