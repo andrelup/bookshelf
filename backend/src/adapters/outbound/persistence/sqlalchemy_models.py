@@ -28,7 +28,10 @@ class UserORM(Base):
 class BookORM(Base):
     """ORM mapping for the `books` table.
 
-    `seller_id` is a foreign key to `users.id`.
+    `seller_id` is a foreign key to `users.id`. `version` backs SQLAlchemy's
+    native optimistic locking (`version_id_col`): every UPDATE checks the
+    in-memory version against the row's current version and increments it,
+    raising `StaleDataError` if a concurrent write already bumped it.
     """
 
     __tablename__ = "books"
@@ -42,6 +45,9 @@ class BookORM(Base):
     seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     category: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version}
 
 
 class FavouriteListORM(Base):
@@ -51,7 +57,9 @@ class FavouriteListORM(Base):
     to `users.id`, and (owner_id, name) is unique. The list owns its items;
     unlike the other ORM models, this is the first aggregate with children,
     so it uses a `relationship()` (eager `selectin` load, cascade delete) to
-    materialize `book_ids` in a single query.
+    materialize `book_ids` in a single query. `version` backs SQLAlchemy's
+    native optimistic locking (`version_id_col`); see the repository's
+    `save()` for how item-only changes are made to bump it too.
     """
 
     __tablename__ = "favourite_lists"
@@ -60,6 +68,7 @@ class FavouriteListORM(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    version: Mapped[int] = mapped_column(nullable=False, default=1)
 
     items: Mapped[list["FavouriteListItemORM"]] = relationship(
         back_populates="favourite_list",
@@ -67,6 +76,8 @@ class FavouriteListORM(Base):
         cascade="all, delete-orphan",
         order_by="FavouriteListItemORM.id",
     )
+
+    __mapper_args__ = {"version_id_col": version}
 
 
 class FavouriteListItemORM(Base):

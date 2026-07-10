@@ -17,6 +17,10 @@ class Book:
         description: Free-text description of the book.
         category: Category/genre used for browsing and search.
         id: Unique identifier. `None` for a book not yet persisted.
+        version: Optimistic-locking version the caller loaded this book at.
+            A `save()` asserts this value against the row's current version,
+            so a write based on stale data fails instead of overwriting a
+            concurrent change. Defaults to 1 for a book not yet persisted.
     """
 
     title: str
@@ -28,3 +32,4 @@ class Book:
     description: str
     category: str
     id: int | None = None
+    version: int = 1

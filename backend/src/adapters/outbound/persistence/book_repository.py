@@ -2,6 +2,7 @@
 
 from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import attributes
 
 from src.adapters.outbound.persistence.sqlalchemy_models import BookORM
 from src.domain.models.book import Book
@@ -18,6 +19,7 @@ def _to_domain(book_orm: BookORM) -> Book:
         seller_id=book_orm.seller_id,
         description=book_orm.description,
         category=book_orm.category,
+        version=book_orm.version,
     )
 
 
@@ -82,6 +84,14 @@ class SqlAlchemyBookRepository:
             book_orm = await self._session.get(BookORM, book.id)
             if book_orm is None:
                 raise ValueError(f"Book {book.id} not found for update")
+            # Assert the caller's loaded version, not the row's freshly-read
+            # one: `find_by_id` returns a detached domain object and discards
+            # the ORM, so this `get()` re-reads the current row (the identity
+            # map holds instances weakly). Overriding the committed version
+            # with what the caller loaded makes `version_id_col` emit
+            # `WHERE version = <loaded>`, so a stale write raises
+            # `StaleDataError` instead of silently clobbering a concurrent one.
+            attributes.set_committed_value(book_orm, "version", book.version)
             _apply_fields(book_orm, book)
         else:
             book_orm = BookORM(
@@ -96,6 +106,8 @@ class SqlAlchemyBookRepository:
             )
             self._session.add(book_orm)
 
+        # Persists `book_orm`: flushes an UPDATE for an existing row, or an
+        # INSERT for a new one.
         await self._session.commit()
         await self._session.refresh(book_orm)
         return _to_domain(book_orm)
