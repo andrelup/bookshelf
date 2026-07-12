@@ -20,7 +20,7 @@ from src.adapters.inbound.schemas.book_schemas import (
     BookResponse,
     BookUpdate,
 )
-from src.adapters.inbound.schemas.common import ApiResponse
+from src.adapters.inbound.schemas.common import ApiResponse, error_responses
 from src.config.container import get_book_service
 from src.domain.models.book import Book
 from src.domain.models.user import User
@@ -60,13 +60,21 @@ def _to_list_response(books: list[Book], total: int, skip: int, limit: int) -> B
     )
 
 
-@router.get("/search", response_model=ApiResponse[BookListResponse])
+@router.get(
+    "/search",
+    response_model=ApiResponse[BookListResponse],
+    summary="Search books",
+    response_description="A page of books matching the search term.",
+    responses=error_responses(401),
+)
 async def search_books(
     book_service: Annotated[BookService, Depends(get_book_service)],
     _current_user: Annotated[User, Depends(get_current_user)],
     q: Annotated[str, Query(min_length=1, description="Search term")],
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    skip: Annotated[int, Query(ge=0, description="Number of items to skip before this page.")] = 0,
+    limit: Annotated[
+        int, Query(ge=1, le=100, description="Maximum number of items to return.")
+    ] = 20,
 ) -> ApiResponse[BookListResponse]:
     """Search books by title, author or category. Available to any role."""
     books, total = await book_service.search(query=q, skip=skip, limit=limit)
@@ -74,12 +82,20 @@ async def search_books(
     return ApiResponse(success=True, data=data, error=None)
 
 
-@router.get("", response_model=ApiResponse[BookListResponse])
+@router.get(
+    "",
+    response_model=ApiResponse[BookListResponse],
+    summary="List books",
+    response_description="A page of books from the catalog.",
+    responses=error_responses(401),
+)
 async def list_books(
     book_service: Annotated[BookService, Depends(get_book_service)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    skip: Annotated[int, Query(ge=0, description="Number of items to skip before this page.")] = 0,
+    limit: Annotated[
+        int, Query(ge=1, le=100, description="Maximum number of items to return.")
+    ] = 20,
 ) -> ApiResponse[BookListResponse]:
     """List books, paginated. Available to any role."""
     books, total = await book_service.list_books(skip=skip, limit=limit)
@@ -87,7 +103,13 @@ async def list_books(
     return ApiResponse(success=True, data=data, error=None)
 
 
-@router.get("/{book_id}", response_model=ApiResponse[BookResponse])
+@router.get(
+    "/{book_id}",
+    response_model=ApiResponse[BookResponse],
+    summary="Get a book by id",
+    response_description="The requested book.",
+    responses=error_responses(401, 404),
+)
 async def get_book(
     book_id: int,
     book_service: Annotated[BookService, Depends(get_book_service)],
@@ -98,7 +120,14 @@ async def get_book(
     return ApiResponse(success=True, data=_to_response(book), error=None)
 
 
-@router.post("", response_model=ApiResponse[BookResponse], status_code=201)
+@router.post(
+    "",
+    response_model=ApiResponse[BookResponse],
+    status_code=201,
+    summary="Create a book listing",
+    response_description="The newly created book listing.",
+    responses=error_responses(401, 403, 409),
+)
 async def create_book(
     payload: BookCreate,
     book_service: Annotated[BookService, Depends(get_book_service)],
@@ -119,7 +148,13 @@ async def create_book(
     return ApiResponse(success=True, data=_to_response(created), error=None)
 
 
-@router.put("/{book_id}", response_model=ApiResponse[BookResponse])
+@router.put(
+    "/{book_id}",
+    response_model=ApiResponse[BookResponse],
+    summary="Update a book listing",
+    response_description="The updated book listing.",
+    responses=error_responses(401, 403, 404, 409),
+)
 async def update_book(
     book_id: int,
     payload: BookUpdate,
@@ -141,7 +176,13 @@ async def update_book(
     return ApiResponse(success=True, data=_to_response(updated), error=None)
 
 
-@router.delete("/{book_id}", response_model=ApiResponse[None])
+@router.delete(
+    "/{book_id}",
+    response_model=ApiResponse[None],
+    summary="Delete a book listing",
+    response_description="The book listing was deleted.",
+    responses=error_responses(401, 403, 404),
+)
 async def delete_book(
     book_id: int,
     book_service: Annotated[BookService, Depends(get_book_service)],

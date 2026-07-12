@@ -33,6 +33,9 @@ dev = [
     "pytest-cov",
     "types-passlib",
     "types-python-jose",
+    # Only used by `seed.py` (dev fixtures, run on the host). The Docker image
+    # copies `src/` alone, so faker must never ship to production.
+    "faker",
 ]
 
 [build-system]
