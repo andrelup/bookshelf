@@ -4,18 +4,27 @@ Importing this module must never trigger a database connection or
 any other side effect.
 """
 
+from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote_plus
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+# The single monorepo-root .env is the source of truth for configuration.
+# Resolve it by absolute path so the settings load regardless of the current
+# working directory: `make dev` (docker compose), `make migrate`/`make seed`
+# and `pytest` all run from `backend/`, while a plain `uvicorn`/`python` may
+# run from the repo root. settings.py lives at backend/src/config/, so the
+# repo root is three parents up.
+_ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
     """Environment-driven application settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ROOT_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
