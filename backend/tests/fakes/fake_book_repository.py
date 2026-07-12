@@ -3,10 +3,18 @@
 Used by unit tests (domain service, mocked ports — no DB/I/O) and by API
 tests (dependency-overriding the outbound port so router tests exercise
 wiring, validation and error translation without a real database).
+
+The fake models optimistic locking exactly like the SQLAlchemy repository:
+an update asserts the caller's `version` against the stored one and raises
+`StaleDataError` (the same exception `version_id_col` raises, and the one the
+error_handler maps to 409) when they differ. Without this, a `save()` that
+just overwrites the dict would let a stale write pass silently and every
+locking test would be green while asserting nothing.
 """
 
 from dataclasses import replace
 
+from sqlalchemy.orm.exc import StaleDataError
 from src.domain.models.book import Book
 
 
@@ -51,6 +59,18 @@ class FakeBookRepository:
         return len(await self.search(query, skip=0, limit=len(self._books) or 1))
 
     async def save(self, book: Book) -> Book:
+        """Insert a new book, or update an existing one asserting its version.
+
+        Mirrors `version_id_col`: the update only applies when `book.version`
+        still matches the stored row (as if it were in the UPDATE's WHERE
+        clause), and bumps the version. An insert asserts nothing and is born
+        at version 1.
+        """
+        existing = self._books.get(book.id) if book.id is not None else None
+        if existing is not None:
+            if existing.version != book.version:
+                raise StaleDataError(f"Book {book.id} was modified by another request")
+            book = replace(book, version=existing.version + 1)
         return self._add(book)
 
     async def delete(self, book_id: int) -> None:

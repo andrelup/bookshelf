@@ -8,16 +8,38 @@ from src.domain.models.user import UserRole
 class RegisterRequest(BaseModel):
     """Payload to create a new user account."""
 
-    email: EmailStr
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "jane.doe@example.com",
+                "name": "Jane Doe",
+                "password": "correct-horse-battery-staple",
+                "role": "customer",
+            }
+        }
+    )
+
+    email: EmailStr = Field(examples=["jane.doe@example.com"])
     name: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8, max_length=128)
-    role: UserRole = UserRole.CUSTOMER
+    role: UserRole = Field(
+        default=UserRole.CUSTOMER, description="Role granted to the new account."
+    )
 
 
 class LoginRequest(BaseModel):
     """Payload to authenticate an existing user."""
 
-    email: EmailStr
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "jane.doe@example.com",
+                "password": "correct-horse-battery-staple",
+            }
+        }
+    )
+
+    email: EmailStr = Field(examples=["jane.doe@example.com"])
     password: str
 
 
@@ -29,7 +51,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     name: str
-    role: UserRole
+    role: UserRole = Field(description="Role held by this account.")
 
 
 class TokenResponse(BaseModel):
