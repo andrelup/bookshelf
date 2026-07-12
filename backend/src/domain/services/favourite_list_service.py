@@ -70,8 +70,15 @@ class FavouriteListService:
         self._ensure_customer(user)
         return await self._get_owned_or_raise(user, list_id)
 
-    async def rename(self, user: User, list_id: int, name: str) -> FavouriteList:
+    async def rename(self, user: User, list_id: int, name: str, version: int) -> FavouriteList:
         """Rename an existing favourite list owned by `user`.
+
+        `version` is the version the *client* read the list at. It replaces the
+        version of the freshly-loaded entity so the repository turns it into
+        the UPDATE's `WHERE version = ...`: a rename based on a stale read then
+        raises `StaleDataError` (409) instead of clobbering a concurrent
+        change. Reusing the loaded entity's own version would make the check
+        pass always (it was read microseconds ago) — a silent lost update.
 
         Raises:
             ForbiddenError: if `user` is not a customer.
@@ -86,6 +93,7 @@ class FavouriteListService:
         if clean_name != favourite_list.name:
             await self._ensure_name_available(owner_id, clean_name)
         favourite_list.name = clean_name
+        favourite_list.version = version
         return await self._favourite_list_repository.save(favourite_list)
 
     async def delete(self, user: User, list_id: int) -> None:

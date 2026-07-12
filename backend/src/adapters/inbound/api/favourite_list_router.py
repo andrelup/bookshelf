@@ -38,6 +38,7 @@ def _to_response(favourite_list: FavouriteList) -> FavouriteListResponse:
         owner_id=favourite_list.owner_id,
         name=favourite_list.name,
         book_ids=favourite_list.book_ids,
+        version=favourite_list.version,
     )
 
 
@@ -111,8 +112,15 @@ async def rename_favourite_list(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[FavouriteListResponse]:
     """Rename a favourite list. Customers only (403 for sellers); 404 if the
-    list doesn't exist or isn't owned by the caller."""
-    updated = await favourite_list_service.rename(current_user, list_id, payload.name)
+    list doesn't exist or isn't owned by the caller.
+
+    The caller must send the `version` they read the list at. It travels
+    untouched into the UPDATE's WHERE clause, so a rename based on a stale
+    read is rejected with 409 instead of overwriting a concurrent change.
+    """
+    updated = await favourite_list_service.rename(
+        current_user, list_id, payload.name, payload.version
+    )
     return ApiResponse(success=True, data=_to_response(updated), error=None)
 
 
