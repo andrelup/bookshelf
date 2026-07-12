@@ -48,6 +48,7 @@ def _to_response(book: Book) -> BookResponse:
         seller_id=book.seller_id,
         description=book.description,
         category=book.category,
+        version=book.version,
     )
 
 
@@ -161,7 +162,12 @@ async def update_book(
     book_service: Annotated[BookService, Depends(get_book_service)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[BookResponse]:
-    """Update a book. Only its owning seller may do this (403 otherwise)."""
+    """Update a book. Only its owning seller may do this (403 otherwise).
+
+    The caller must send the `version` they read the book at. It travels
+    untouched into the UPDATE's WHERE clause, so an update based on a stale
+    read is rejected with 409 instead of overwriting a concurrent change.
+    """
     changes = Book(
         title=payload.title,
         author=payload.author,
@@ -171,6 +177,7 @@ async def update_book(
         seller_id=current_user.id or _UNVALIDATED_SELLER_ID_PLACEHOLDER,
         description=payload.description,
         category=payload.category,
+        version=payload.version,
     )
     updated = await book_service.update(current_user, book_id, changes)
     return ApiResponse(success=True, data=_to_response(updated), error=None)

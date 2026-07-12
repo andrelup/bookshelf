@@ -12,11 +12,15 @@ _DEFAULT_BOOK_FIELDS: dict[str, object] = {
     "seller_id": 1,
     "description": "A craftsman's guide to software structure.",
     "category": "Software Engineering",
+    # Optimistic-locking version a caller loaded the entity at. Override it to
+    # simulate a stale write (a version other than the stored one).
+    "version": 1,
 }
 
 _DEFAULT_FAVOURITE_LIST_FIELDS: dict[str, object] = {
     "owner_id": 3,
     "name": "Summer 2026",
+    "version": 1,
 }
 
 

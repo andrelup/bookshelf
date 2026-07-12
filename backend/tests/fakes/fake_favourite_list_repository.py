@@ -3,10 +3,18 @@
 Used by unit tests (domain service, mocked ports — no DB/I/O) and by API
 tests (dependency-overriding the outbound port so router tests exercise
 wiring, validation and error translation without a real database).
+
+The fake models optimistic locking exactly like the SQLAlchemy repository:
+an update asserts the caller's `version` against the stored one and raises
+`StaleDataError` (the same exception `version_id_col` raises, and the one the
+error_handler maps to 409) when they differ. Without this, a `save()` that
+just overwrites the dict would let a stale write pass silently and every
+locking test would be green while asserting nothing.
 """
 
 from dataclasses import replace
 
+from sqlalchemy.orm.exc import StaleDataError
 from src.domain.models.favourite import FavouriteList
 
 
@@ -43,6 +51,20 @@ class FakeFavouriteListRepository:
         return None
 
     async def save(self, favourite_list: FavouriteList) -> FavouriteList:
+        """Insert a new list, or update an existing one asserting its version.
+
+        Mirrors `version_id_col`: the update only applies when
+        `favourite_list.version` still matches the stored row (as if it were in
+        the UPDATE's WHERE clause), and bumps the version. An insert asserts
+        nothing and is born at version 1.
+        """
+        existing = self._lists.get(favourite_list.id) if favourite_list.id is not None else None
+        if existing is not None:
+            if existing.version != favourite_list.version:
+                raise StaleDataError(
+                    f"Favourite list {favourite_list.id} was modified by another request"
+                )
+            favourite_list = replace(favourite_list, version=existing.version + 1)
         return self._add(favourite_list)
 
     async def delete(self, list_id: int) -> None:
