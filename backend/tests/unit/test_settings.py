@@ -1,5 +1,6 @@
 """Unit tests for Settings.database_url composition."""
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -133,3 +134,17 @@ def test_cors_allowed_origins_parsed_from_env_var(monkeypatch: pytest.MonkeyPatc
 
     # Assert
     assert settings.cors_allowed_origins == ["http://localhost:3000", "https://foo.com"]
+
+
+def test_env_file_is_resolved_to_the_monorepo_root_absolutely() -> None:
+    # Arrange — the configured env_file must be an absolute path to the single
+    # root .env so settings load no matter the CWD (make seed/migrate and
+    # pytest run from backend/, uvicorn/python may run from the repo root).
+    env_file = Path(Settings.model_config["env_file"])  # type: ignore[arg-type]
+
+    # Act / Assert
+    assert env_file.is_absolute()
+    assert env_file.name == ".env"
+    # Its parent is the monorepo root: it holds the Makefile and the backend/ dir.
+    assert (env_file.parent / "Makefile").is_file()
+    assert (env_file.parent / "backend").is_dir()
