@@ -1,6 +1,12 @@
-"""Unit tests for `BookService`, using the in-memory fake repository (no DB)."""
+"""Unit tests for `BookService`, using the in-memory fake repository (no DB).
+
+The fake repository asserts the book's `version` on every update, exactly like
+`version_id_col` does against Postgres, so the tests below can prove the
+*client's* version (not the freshly-loaded one) is what reaches the write.
+"""
 
 import pytest
+from sqlalchemy.orm.exc import StaleDataError
 from src.domain.exceptions import BookNotFoundError, BookValidationError, ForbiddenError
 from src.domain.models.user import User
 from src.domain.services.book_service import BookService
@@ -216,3 +222,70 @@ async def test_search_returns_matching_books_and_total(sut: BookService, seller_
     # Assert
     assert total == 1
     assert books[0].title == "Clean Code"
+
+
+async def test_update_sends_the_clients_version_and_bumps_it(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(seller_user, make_book())
+    assert created.id is not None
+    changes = make_book(stock=10, version=created.version)
+
+    # Act — the client updates from the version it read.
+    updated = await sut.update(seller_user, created.id, changes)
+
+    # Assert — the write went through and moved the version forward.
+    assert updated.stock == 10
+    assert updated.version == created.version + 1
+
+
+async def test_update_when_version_is_stale_raises_stale_data_error(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange — a concurrent update already moved the book past `created.version`.
+    created = await sut.create(seller_user, make_book())
+    assert created.id is not None
+    await sut.update(seller_user, created.id, make_book(stock=10, version=created.version))
+
+    # Act / Assert — the stale version travels into the write and is rejected
+    # there (a service-level comparison would be a TOCTOU race).
+    with pytest.raises(StaleDataError):
+        await sut.update(seller_user, created.id, make_book(stock=99, version=created.version))
+
+
+async def test_update_when_version_is_stale_does_not_overwrite_the_change(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(seller_user, make_book())
+    assert created.id is not None
+    await sut.update(seller_user, created.id, make_book(stock=10, version=created.version))
+
+    # Act
+    with pytest.raises(StaleDataError):
+        await sut.update(seller_user, created.id, make_book(stock=99, version=created.version))
+
+    # Assert — the concurrent update survived: no lost update.
+    current = await sut.get(created.id)
+    assert current.stock == 10
+
+
+async def test_update_does_not_replace_the_clients_version_with_the_stored_one(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange — the book is at version 2 after one update; the client that
+    # read it at version 2 must be able to write, the one still at version 1
+    # must not. If the service overwrote the incoming version with the stored
+    # one, both would succeed and the lock would not exist.
+    created = await sut.create(seller_user, make_book())
+    assert created.id is not None
+    fresh = await sut.update(seller_user, created.id, make_book(version=created.version))
+
+    # Act
+    updated = await sut.update(seller_user, created.id, make_book(stock=7, version=fresh.version))
+
+    # Assert
+    assert updated.stock == 7
+    with pytest.raises(StaleDataError):
+        await sut.update(seller_user, created.id, make_book(version=created.version))

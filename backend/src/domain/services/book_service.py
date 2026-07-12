@@ -35,6 +35,15 @@ class BookService:
     async def update(self, seller: User, book_id: int, changes: Book) -> Book:
         """Update an existing book. Only its owning seller may update it.
 
+        `changes.version` is the version the *client* read the book at and is
+        deliberately preserved: the repository turns it into the UPDATE's
+        `WHERE version = ...`, so a write based on a stale read raises
+        `StaleDataError` (409) instead of clobbering a concurrent change.
+        Overwriting it with `existing.version` would make the check pass
+        always (`existing` was read microseconds ago) and silently reintroduce
+        lost updates, and comparing the two here instead would be a TOCTOU
+        race — the assertion must travel inside the UPDATE.
+
         Raises:
             ForbiddenError: if `seller` is not a seller, or not the book's owner.
             BookNotFoundError: if no book exists with `book_id`.

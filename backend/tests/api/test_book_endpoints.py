@@ -1,10 +1,13 @@
 """API tests for the books router: httpx.AsyncClient against the FastAPI app.
 
-Covers status codes, the `{"success", "data", "error"}` envelope and
-role-based authorization (401/403/404/422 translation).
+Covers status codes, the `{"success", "data", "error"}` envelope,
+role-based authorization (401/403/404/422 translation) and the
+optimistic-locking `version` round-trip (200 on a current version, 409 on a
+stale one).
 """
 
 from collections.abc import Callable
+from typing import Any
 
 import httpx
 from src.domain.models.user import User
@@ -21,6 +24,15 @@ _VALID_PAYLOAD = {
     "description": "A craftsman's guide to software structure.",
     "category": "Software Engineering",
 }
+
+
+def _update_payload(version: int, **overrides: Any) -> dict[str, Any]:
+    """Build a `BookUpdate` body: the create fields plus the mandatory `version`.
+
+    `version` is the version the client read the book at; the server asserts it
+    against the stored row, so it has to be sent on every update.
+    """
+    return {**_VALID_PAYLOAD, "version": version, **overrides}
 
 
 async def test_create_book_when_seller_returns_201_and_book(
@@ -41,6 +53,7 @@ async def test_create_book_when_seller_returns_201_and_book(
     assert body["error"] is None
     assert body["data"]["title"] == "Clean Architecture"
     assert body["data"]["seller_id"] == seller_user.id
+    assert body["data"]["version"] == 1
 
 
 async def test_create_book_when_customer_returns_403(
@@ -131,6 +144,26 @@ async def test_get_book_when_exists_returns_200(
     assert body["data"]["id"] == created.id
 
 
+async def test_get_book_returns_current_version(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange — a book created (version 1) and then updated once (version 2).
+    created = await book_service.create(seller_user, make_book())
+    assert created.id is not None
+    authenticated_as(seller_user)
+    await client.put(f"/books/{created.id}", json=_update_payload(created.version))
+
+    # Act
+    response = await client.get(f"/books/{created.id}")
+
+    # Assert — the client can read the version it must send back on the next update.
+    assert response.status_code == 200
+    assert response.json()["data"]["version"] == created.version + 1
+
+
 async def test_get_book_when_missing_returns_404(
     client: httpx.AsyncClient,
     authenticated_as: Callable[[User], None],
@@ -180,7 +213,7 @@ async def test_update_book_when_owner_seller_returns_200(
     created = await book_service.create(seller_user, make_book())
     assert created.id is not None
     authenticated_as(seller_user)
-    payload = {**_VALID_PAYLOAD, "title": "Clean Architecture (2nd ed.)"}
+    payload = _update_payload(created.version, title="Clean Architecture (2nd ed.)")
 
     # Act
     response = await client.put(f"/books/{created.id}", json=payload)
@@ -189,6 +222,96 @@ async def test_update_book_when_owner_seller_returns_200(
     assert response.status_code == 200
     body = response.json()
     assert body["data"]["title"] == "Clean Architecture (2nd ed.)"
+
+
+async def test_update_book_when_version_current_returns_200_and_increments_version(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange
+    created = await book_service.create(seller_user, make_book())
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.put(f"/books/{created.id}", json=_update_payload(created.version))
+
+    # Assert — the response carries the new version, which the client must send next time.
+    assert response.status_code == 200
+    assert response.json()["data"]["version"] == created.version + 1
+
+
+async def test_update_book_twice_with_returned_version_both_return_200(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange — regression test: before the version reached the API, every PUT
+    # sent the dataclass default (1), so the second one hit a row already at
+    # version 2 and failed with a spurious 409 with zero concurrency involved.
+    created = await book_service.create(seller_user, make_book())
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act — each PUT sends the version returned by the previous one.
+    first = await client.put(f"/books/{created.id}", json=_update_payload(created.version))
+    first_version = first.json()["data"]["version"]
+    second = await client.put(f"/books/{created.id}", json=_update_payload(first_version, stock=42))
+
+    # Assert
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.json()["data"]["stock"] == 42
+    assert second.json()["data"]["version"] == first_version + 1
+
+
+async def test_update_book_when_version_stale_returns_409_and_keeps_previous_state(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange — someone else already updated the book, so the version this
+    # client read is no longer the current one.
+    created = await book_service.create(seller_user, make_book())
+    assert created.id is not None
+    authenticated_as(seller_user)
+    await client.put(f"/books/{created.id}", json=_update_payload(created.version, stock=10))
+
+    # Act — a write based on the now-stale version.
+    response = await client.put(
+        f"/books/{created.id}", json=_update_payload(created.version, stock=99)
+    )
+
+    # Assert — rejected, and the concurrent change was not overwritten.
+    assert response.status_code == 409
+    body = response.json()
+    assert body["success"] is False
+    assert body["data"] is None
+    current = await client.get(f"/books/{created.id}")
+    assert current.json()["data"]["stock"] == 10
+
+
+async def test_update_book_when_version_missing_returns_422(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange — `version` is mandatory: without it the server could not tell
+    # which state the update is based on, and the lock would not exist.
+    created = await book_service.create(seller_user, make_book())
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.put(f"/books/{created.id}", json=_VALID_PAYLOAD)
+
+    # Assert
+    assert response.status_code == 422
 
 
 async def test_update_book_when_different_seller_returns_403(
@@ -204,7 +327,7 @@ async def test_update_book_when_different_seller_returns_403(
     authenticated_as(other_seller_user)
 
     # Act
-    response = await client.put(f"/books/{created.id}", json=_VALID_PAYLOAD)
+    response = await client.put(f"/books/{created.id}", json=_update_payload(created.version))
 
     # Assert
     assert response.status_code == 403
@@ -223,7 +346,7 @@ async def test_update_book_when_customer_returns_403(
     authenticated_as(customer_user)
 
     # Act
-    response = await client.put(f"/books/{created.id}", json=_VALID_PAYLOAD)
+    response = await client.put(f"/books/{created.id}", json=_update_payload(created.version))
 
     # Assert
     assert response.status_code == 403
