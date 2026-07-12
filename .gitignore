@@ -9,6 +9,7 @@ Thumbs.db
 
 # --- Editors / IDE ---
 .idea/
+.vscode/
 *.swp
 *.swo
 
