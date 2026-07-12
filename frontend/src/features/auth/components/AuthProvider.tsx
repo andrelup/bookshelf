@@ -16,7 +16,7 @@ interface AuthProviderProps {
  * synced with the API client so every request carries the auth header.
  */
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [token, setToken] = useLocalStorage<string | null>('auth-token', null);
+  const [token, setToken, removeToken] = useLocalStorage<string | null>('auth-token', null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { execute: fetchCurrentUser } = useApi(getCurrentUser);
@@ -41,9 +41,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   );
 
   const logout = useCallback(() => {
-    setToken(null);
+    removeToken();
     setUser(null);
-  }, [setToken]);
+  }, [removeToken]);
 
   // Rehydrate the user on mount (e.g. after a page refresh): the token
   // survives in localStorage but `user` is plain component state and is
