@@ -1,6 +1,12 @@
-"""Unit tests for `FavouriteListService`, using in-memory fakes (no DB)."""
+"""Unit tests for `FavouriteListService`, using in-memory fakes (no DB).
+
+The fake repository asserts the entity's `version` on every update, exactly
+like `version_id_col` does against Postgres, so the tests below can prove the
+*client's* version (not the freshly-loaded one) is what reaches the write.
+"""
 
 import pytest
+from sqlalchemy.orm.exc import StaleDataError
 from src.domain.exceptions import (
     BookNotFoundError,
     DuplicateFavouriteBookError,
@@ -142,7 +148,7 @@ async def test_rename_when_owner_changes_name(
     assert created.id is not None
 
     # Act
-    renamed = await sut.rename(customer_user, created.id, "Beach reads")
+    renamed = await sut.rename(customer_user, created.id, "Beach reads", created.version)
 
     # Assert
     assert renamed.id == created.id
@@ -157,7 +163,7 @@ async def test_rename_to_same_name_is_allowed(
     assert created.id is not None
 
     # Act
-    renamed = await sut.rename(customer_user, created.id, "Summer 2026")
+    renamed = await sut.rename(customer_user, created.id, "Summer 2026", created.version)
 
     # Assert
     assert renamed.name == "Summer 2026"
@@ -173,7 +179,7 @@ async def test_rename_to_another_existing_name_raises_duplicate(
 
     # Act / Assert
     with pytest.raises(DuplicateFavouriteListNameError):
-        await sut.rename(customer_user, created.id, "Gifts")
+        await sut.rename(customer_user, created.id, "Gifts", created.version)
 
 
 async def test_rename_when_another_customers_list_raises_not_found(
@@ -185,7 +191,7 @@ async def test_rename_when_another_customers_list_raises_not_found(
 
     # Act / Assert
     with pytest.raises(FavouriteListNotFoundError):
-        await sut.rename(other_customer_user, created.id, "Hijacked")
+        await sut.rename(other_customer_user, created.id, "Hijacked", created.version)
 
 
 async def test_delete_when_owner_removes_list(
@@ -305,3 +311,80 @@ async def test_remove_book_when_another_customers_list_raises_not_found(
     # Act / Assert
     with pytest.raises(FavouriteListNotFoundError):
         await sut.remove_book(other_customer_user, created.id, 1)
+
+
+async def test_rename_sends_the_clients_version_and_bumps_it(
+    sut: FavouriteListService, customer_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(customer_user, "Summer 2026")
+    assert created.id is not None
+
+    # Act — the client renames from the version it read.
+    renamed = await sut.rename(customer_user, created.id, "Beach reads", created.version)
+
+    # Assert — the write went through and moved the version forward.
+    assert renamed.version == created.version + 1
+
+
+async def test_rename_when_version_is_stale_raises_stale_data_error(
+    sut: FavouriteListService, customer_user: User
+) -> None:
+    # Arrange — a concurrent rename already moved the list past `created.version`.
+    created = await sut.create(customer_user, "Summer 2026")
+    assert created.id is not None
+    await sut.rename(customer_user, created.id, "Beach reads", created.version)
+
+    # Act / Assert — the stale version travels into the write and is rejected
+    # there (a service-level comparison would be a TOCTOU race).
+    with pytest.raises(StaleDataError):
+        await sut.rename(customer_user, created.id, "Hijacked", created.version)
+
+
+async def test_rename_when_version_is_stale_does_not_overwrite_the_change(
+    sut: FavouriteListService, customer_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(customer_user, "Summer 2026")
+    assert created.id is not None
+    await sut.rename(customer_user, created.id, "Beach reads", created.version)
+
+    # Act
+    with pytest.raises(StaleDataError):
+        await sut.rename(customer_user, created.id, "Hijacked", created.version)
+
+    # Assert — the concurrent rename survived: no lost update.
+    current = await sut.get(customer_user, created.id)
+    assert current.name == "Beach reads"
+
+
+async def test_add_book_needs_no_client_version_and_bumps_it(
+    sut: FavouriteListService, customer_user: User
+) -> None:
+    # Arrange — adding a book carries a `book_id`, not client-loaded state, so
+    # it uses the version just loaded and never asks the caller for one.
+    created = await sut.create(customer_user, "Summer 2026")
+    assert created.id is not None
+
+    # Act
+    updated = await sut.add_book(customer_user, created.id, 1)
+
+    # Assert
+    assert updated.book_ids == [1]
+    assert updated.version == created.version + 1
+
+
+async def test_remove_book_needs_no_client_version_after_the_version_moved(
+    sut: FavouriteListService, customer_user: User
+) -> None:
+    # Arrange — the add already bumped the list to version 2; removing must
+    # still work without the caller supplying any version.
+    created = await sut.create(customer_user, "Summer 2026")
+    assert created.id is not None
+    await sut.add_book(customer_user, created.id, 1)
+
+    # Act
+    updated = await sut.remove_book(customer_user, created.id, 1)
+
+    # Assert
+    assert updated.book_ids == []
