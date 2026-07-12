@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
 import { AuthProvider } from '@/features/auth';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 
 interface AppProvidersProps {
   children: ReactNode;
 }
 
-/** Composes all global providers (auth, etc.) around the app tree. */
+/** Composes all global providers (toast, auth, etc.) around the app tree. */
 export const AppProviders = ({ children }: AppProvidersProps) => (
-  <AuthProvider>{children}</AuthProvider>
+  <ToastProvider>
+    <AuthProvider>{children}</AuthProvider>
+  </ToastProvider>
 );
