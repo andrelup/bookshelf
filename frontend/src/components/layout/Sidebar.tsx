@@ -1,18 +1,49 @@
-import { useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 // Cross-cutting exception to the "components/ imports from no feature" rule:
 // auth is global Context state (the same reasoning `ProtectedRoute` already
 // relies on), so the Sidebar reads it directly via `useAuth()` instead of
 // receiving `user`/`onLogout` as props.
 import { useAuth } from '@/features/auth';
 import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 
 export interface SidebarProps {
   className?: string;
 }
 
-/** Left sidebar shown for logged-in users: avatar, name, and a logout button. */
+const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
+  `block rounded px-3 py-2 text-sm ${
+    isActive ? 'bg-primary-50 font-semibold text-primary-dark' : 'text-body hover:bg-bg'
+  }`;
+
+// Visual-only item: no page exists yet for it, so it is not wrapped in a
+// `NavLink`. Turn it into a real `NavLink` once its route exists.
+const InactiveNavItem = ({
+  label,
+  badge,
+}: {
+  label: string;
+  badge?: number;
+}) => (
+  <div className="flex items-center justify-between rounded px-3 py-2 text-sm text-body">
+    <span>{label}</span>
+    {badge !== undefined && (
+      <span className="rounded-full bg-primary-50 px-2 text-xs font-semibold text-primary-dark">
+        {badge}
+      </span>
+    )}
+  </div>
+);
+
+const NavGroup = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="mb-4">
+    <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-wide text-muted">{label}</p>
+    {children}
+  </div>
+);
+
+/** Left sidebar shown for logged-in users: profile, grouped navigation, and logout. */
 export const Sidebar = ({ className = '' }: SidebarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -23,21 +54,54 @@ export const Sidebar = ({ className = '' }: SidebarProps) => {
   };
 
   return (
-    <aside
-      className={`flex w-64 flex-col items-center gap-2 border-r border-gray-200 bg-white px-4 py-6 ${className}`}
-    >
-      {user ? (
-        <>
-          <Avatar name={user.name} size="lg" />
-          <span className="text-center font-medium text-gray-900">{user.name}</span>
-        </>
-      ) : (
-        <Spinner />
-      )}
-      <div className="flex-1" />
-      <Button variant="danger" onClick={handleLogout} className="w-full">
-        Log out
-      </Button>
+    <aside className={`flex h-full w-[248px] flex-col border-r border-border bg-surface ${className}`}>
+      <div className="border-b border-border p-4">
+        {user ? (
+          <div className="flex items-center gap-3">
+            <Avatar name={user.name} size="md" />
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-ink">{user.name}</p>
+              <p className="truncate text-[13px] text-muted">{user.email}</p>
+            </div>
+          </div>
+        ) : (
+          <Spinner />
+        )}
+      </div>
+
+      <nav className="flex-1 overflow-auto p-4">
+        <NavGroup label="Principal">
+          <NavLink to="/" end className={navLinkClassName}>
+            Inicio
+          </NavLink>
+          <NavLink to="/dashboard" className={navLinkClassName}>
+            Panel
+          </NavLink>
+          <InactiveNavItem label="Explorar catálogo" />
+        </NavGroup>
+
+        <NavGroup label="Vender">
+          <InactiveNavItem label="Publicar libro" />
+          <InactiveNavItem label="Mis libros" />
+          <InactiveNavItem label="Ventas y pedidos" badge={2} />
+        </NavGroup>
+
+        <NavGroup label="Cuenta">
+          <InactiveNavItem label="Favoritos" />
+          <InactiveNavItem label="Mensajes" badge={1} />
+          <InactiveNavItem label="Ajustes" />
+        </NavGroup>
+      </nav>
+
+      <div className="mt-auto border-t border-border p-4">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full rounded border border-danger-border bg-transparent py-2.5 font-semibold text-danger hover:bg-danger-bg"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   );
 };

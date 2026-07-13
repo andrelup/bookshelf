@@ -1,5 +1,5 @@
 export const Footer = () => (
-  <footer className="border-t border-gray-200 bg-white px-6 py-4 text-center text-sm text-gray-500">
-    <p>&copy; {new Date().getFullYear()} BookShelf. All rights reserved.</p>
+  <footer className="flex h-[50px] items-center justify-center border-t border-border bg-surface text-[13px] text-muted">
+    <p>© 2026 BookShelf. Todos los derechos reservados.</p>
   </footer>
 );

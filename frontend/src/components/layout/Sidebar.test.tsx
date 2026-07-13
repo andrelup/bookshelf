@@ -59,7 +59,7 @@ describe('Sidebar', () => {
 
     await screen.findByText('Ada Lovelace');
 
-    await user.click(screen.getByRole('button', { name: 'Log out' }));
+    await user.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
 
     expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
     expect(window.localStorage.getItem('auth-token')).toBeNull();

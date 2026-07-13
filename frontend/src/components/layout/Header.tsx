@@ -1,7 +1,69 @@
-export const Header = () => (
-  <header className="border-b border-gray-200 bg-white px-6 py-4">
-    <nav className="flex items-center justify-between" aria-label="Main navigation">
-      <span className="text-xl font-bold text-gray-900">BookShelf</span>
-    </nav>
-  </header>
+// Cross-cutting exception to the "components/ imports from no feature" rule:
+// auth is global Context state (the same reasoning `Sidebar` already relies
+// on), so the Header reads it directly via `useAuth()` instead of receiving
+// `user` as a prop.
+import { useAuth } from '@/features/auth';
+
+const CartIcon = () => (
+  <svg
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.435m0 0L6.75 14.25a1.125 1.125 0 0 0 1.11.975h9.508a1.125 1.125 0 0 0 1.11-.9l1.264-6.75a1.125 1.125 0 0 0-1.11-1.35H5.106m0 0L4.5 5.25M7.5 18.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm9 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+    />
+  </svg>
 );
+
+export const Header = () => {
+  const { user } = useAuth();
+
+  return (
+    <header className="flex h-[62px] items-center justify-between border-b border-border bg-surface px-7">
+      <span className="font-serif text-[21px] font-bold text-ink">
+        Book<span className="text-primary">Shelf</span>
+      </span>
+
+      {user && (
+        <div className="flex flex-1 justify-center px-8">
+          <input
+            type="search"
+            aria-label="Buscar"
+            placeholder="Buscar por título, autor o ISBN…"
+            className="w-full max-w-md rounded-full bg-bg px-4 py-2 text-sm text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-primary-50"
+          />
+        </div>
+      )}
+
+      {user?.role === 'seller' && (
+        <button
+          type="button"
+          // TODO: open "Publicar libro"
+          className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+        >
+          + Vender libro
+        </button>
+      )}
+
+      {user?.role === 'customer' && (
+        <button
+          type="button"
+          aria-label="Carrito (3)"
+          // TODO: connect to real cart count when the cart feature exists
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-dark"
+        >
+          <CartIcon />
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-primary text-xs font-semibold text-white">
+            3
+          </span>
+        </button>
+      )}
+    </header>
+  );
+};
