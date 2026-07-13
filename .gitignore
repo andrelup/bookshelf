@@ -3,6 +3,9 @@
 .playwright-mcp/
 .playwright/
 
+# --- Claude Design (local reference, not versioned) ---
+design/
+
 # --- OS ---
 .DS_Store
 Thumbs.db
