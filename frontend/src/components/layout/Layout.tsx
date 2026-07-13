@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { MobileTabBar } from '@/components/layout/MobileTabBar';
 
 export const Layout = () => {
   const { token } = useAuth();
@@ -14,7 +15,7 @@ export const Layout = () => {
     <div className="flex min-h-screen flex-col">
       <Header />
       <div className="flex min-h-0 flex-1">
-        {token && <Sidebar />}
+        {token && <Sidebar className="hidden md:flex" />}
         <div className="flex min-w-0 flex-1 flex-col">
           <PageContainer>
             <Suspense
@@ -30,6 +31,7 @@ export const Layout = () => {
           <Footer />
         </div>
       </div>
+      {token && <MobileTabBar />}
     </div>
   );
 };

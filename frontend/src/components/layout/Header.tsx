@@ -26,12 +26,22 @@ export const Header = () => {
 
   return (
     <header className="flex h-[62px] items-center justify-between border-b border-border bg-surface px-7">
+      {/*
+        TODO: add a "Volver" (back) button here (mobile only, left of the
+        logo) once detail screens exist — see design system section 10.
+      */}
       <span className="font-serif text-[21px] font-bold text-ink">
         Book<span className="text-primary">Shelf</span>
       </span>
 
+      {/*
+        On mobile these functions live in the `MobileTabBar` instead: the
+        search bar has no dedicated screen yet, and the seller/customer
+        actions are covered by the tab bar's "Añadir libro" FAB and
+        "Carrito" tab respectively.
+      */}
       {user && (
-        <div className="flex flex-1 justify-center px-8">
+        <div className="hidden flex-1 justify-center px-8 md:flex">
           <input
             type="search"
             aria-label="Buscar"
@@ -45,7 +55,7 @@ export const Header = () => {
         <button
           type="button"
           // TODO: open "Publicar libro"
-          className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+          className="hidden rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover md:inline-flex"
         >
           + Vender libro
         </button>
@@ -56,7 +66,7 @@ export const Header = () => {
           type="button"
           aria-label="Carrito (3)"
           // TODO: connect to real cart count when the cart feature exists
-          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-dark"
+          className="relative hidden h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-dark md:flex"
         >
           <CartIcon />
           <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-primary text-xs font-semibold text-white">
