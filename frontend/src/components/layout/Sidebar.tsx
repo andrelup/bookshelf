@@ -54,7 +54,7 @@ export const Sidebar = ({ className = '' }: SidebarProps) => {
   };
 
   return (
-    <aside className={`flex h-full w-[248px] flex-col border-r border-border bg-surface ${className}`}>
+    <aside className={`flex w-[248px] flex-col border-r border-border bg-surface ${className}`}>
       <div className="border-b border-border p-4">
         {user ? (
           <div className="flex items-center gap-3">
