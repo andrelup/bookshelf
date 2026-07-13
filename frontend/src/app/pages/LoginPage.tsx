@@ -7,7 +7,7 @@ const LoginPage = () => (
     <LoginForm />
     <p className="mt-4 text-sm text-gray-600">
       ¿No tienes cuenta?{' '}
-      <Link to="/register" className="font-medium text-blue-600 hover:underline">
+      <Link to="/register" className="font-medium text-primary hover:underline">
         Regístrate
       </Link>
     </p>
