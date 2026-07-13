@@ -5,5 +5,7 @@ interface PageContainerProps {
 }
 
 export const PageContainer = ({ children }: PageContainerProps) => (
-  <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+  <main className="flex-1 overflow-auto bg-bg p-11">
+    <div className="mx-auto h-full w-full max-w-5xl">{children}</div>
+  </main>
 );
