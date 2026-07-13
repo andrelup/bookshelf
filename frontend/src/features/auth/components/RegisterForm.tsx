@@ -86,7 +86,7 @@ export const RegisterForm = () => {
         <p className="text-sm text-gray-500">Mínimo 8 caracteres (máximo 128)</p>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

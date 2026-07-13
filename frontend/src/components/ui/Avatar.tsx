@@ -17,7 +17,7 @@ export const Avatar = ({ name, size = 'md', className = '' }: AvatarProps) => (
   <div
     role="img"
     aria-label={name}
-    className={`flex items-center justify-center rounded-full bg-blue-600 font-semibold text-white ${sizeClasses[size]} ${className}`}
+    className={`flex items-center justify-center rounded-full bg-primary font-semibold text-white ${sizeClasses[size]} ${className}`}
   >
     {getInitials(name)}
   </div>
