@@ -28,7 +28,13 @@ export const Layout = () => {
               <Outlet />
             </Suspense>
           </PageContainer>
-          <Footer />
+          {/*
+            When logged in, the fixed `MobileTabBar` owns the bottom of the
+            viewport on mobile, so the footer would sit hidden behind it —
+            hide it there (same `hidden md:flex` pattern as `Sidebar`). On
+            auth screens (no token, no tab bar) the footer stays visible.
+          */}
+          <Footer className={token ? 'hidden md:flex' : ''} />
         </div>
       </div>
       {token && <MobileTabBar />}

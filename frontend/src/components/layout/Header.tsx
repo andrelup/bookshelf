@@ -25,12 +25,18 @@ export const Header = () => {
   const { user } = useAuth();
 
   return (
-    <header className="flex h-[62px] items-center justify-between border-b border-border bg-surface px-7">
+    <header
+      className={`flex h-14 items-center border-b border-border bg-surface px-4 md:h-[62px] md:px-7 ${
+        // On mobile the auth navbar centers the lone logo (no session yet);
+        // the logged-in navbar keeps it left with search/actions on the right.
+        user ? 'justify-between' : 'justify-center md:justify-start'
+      }`}
+    >
       {/*
         TODO: add a "Volver" (back) button here (mobile only, left of the
         logo) once detail screens exist — see design system section 10.
       */}
-      <span className="font-serif text-[21px] font-bold text-ink">
+      <span className="font-serif text-[17px] font-bold text-ink md:text-[21px]">
         Book<span className="text-primary">Shelf</span>
       </span>
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '@/features/auth';
 import { MobileTabBar } from './MobileTabBar';
@@ -27,6 +27,12 @@ const renderTabBar = (initialEntries: string[] = ['/']) =>
     </AuthProvider>,
   );
 
+const loginAs = async (raw: typeof rawSellerUser | typeof rawCustomerUser) => {
+  const { apiClient } = await import('@/lib/api-client');
+  vi.mocked(apiClient.get).mockResolvedValueOnce(raw);
+  window.localStorage.setItem('auth-token', JSON.stringify('test-token'));
+};
+
 describe('MobileTabBar', () => {
   afterEach(() => {
     window.localStorage.clear();
@@ -39,41 +45,34 @@ describe('MobileTabBar', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows the seller tabs (4 tabs + FAB), without Carrito or Favoritos', async () => {
-    const { apiClient } = await import('@/lib/api-client');
-    vi.mocked(apiClient.get).mockResolvedValueOnce(rawSellerUser);
-    window.localStorage.setItem('auth-token', JSON.stringify('test-token'));
+  it('shows the simplified seller tabs (Inicio + FAB + Cuenta)', async () => {
+    await loginAs(rawSellerUser);
 
     renderTabBar();
 
     expect(await screen.findByText('Añadir libro')).toBeInTheDocument();
     expect(screen.getByText('Inicio')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Catálogo')).toBeInTheDocument();
     expect(screen.getByText('Cuenta')).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Catálogo')).not.toBeInTheDocument();
     expect(screen.queryByText('Carrito')).not.toBeInTheDocument();
-    expect(screen.queryByText('Favoritos')).not.toBeInTheDocument();
   });
 
-  it('shows the 5 customer tabs, without the "Añadir libro" FAB', async () => {
-    const { apiClient } = await import('@/lib/api-client');
-    vi.mocked(apiClient.get).mockResolvedValueOnce(rawCustomerUser);
-    window.localStorage.setItem('auth-token', JSON.stringify('test-token'));
+  it('shows the simplified customer tabs (Inicio + Carrito + Cuenta), without the FAB', async () => {
+    await loginAs(rawCustomerUser);
 
     renderTabBar();
 
     expect(await screen.findByText('Inicio')).toBeInTheDocument();
-    expect(screen.getByText('Catálogo')).toBeInTheDocument();
     expect(screen.getByText('Carrito')).toBeInTheDocument();
-    expect(screen.getByText('Favoritos')).toBeInTheDocument();
     expect(screen.getByText('Cuenta')).toBeInTheDocument();
     expect(screen.queryByText('Añadir libro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Catálogo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Favoritos')).not.toBeInTheDocument();
   });
 
   it('marks the "Inicio" tab as active on the home route', async () => {
-    const { apiClient } = await import('@/lib/api-client');
-    vi.mocked(apiClient.get).mockResolvedValueOnce(rawCustomerUser);
-    window.localStorage.setItem('auth-token', JSON.stringify('test-token'));
+    await loginAs(rawCustomerUser);
 
     renderTabBar(['/']);
 
@@ -81,5 +80,53 @@ describe('MobileTabBar', () => {
     const inicioLink = inicioLabel.closest('a');
 
     expect(inicioLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('opens the account drawer with the customer options when "Cuenta" is tapped', async () => {
+    await loginAs(rawCustomerUser);
+
+    renderTabBar();
+
+    const accountTab = await screen.findByRole('button', { name: /Cuenta/ });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(accountTab);
+
+    const dialog = screen.getByRole('dialog', { name: 'Cuenta' });
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText('Mis favoritos')).toBeInTheDocument();
+    expect(screen.getByText('Mis pedidos')).toBeInTheDocument();
+    expect(screen.getByText('Editar perfil')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cerrar sesión/ })).toBeInTheDocument();
+    // Customer has no "Mensajes (Próximamente)" entry.
+    expect(screen.queryByText('Mensajes')).not.toBeInTheDocument();
+  });
+
+  it('opens the account drawer with the seller options (including Mensajes "Próximamente")', async () => {
+    await loginAs(rawSellerUser);
+
+    renderTabBar();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Cuenta/ }));
+
+    expect(screen.getByRole('dialog', { name: 'Cuenta' })).toBeInTheDocument();
+    expect(screen.getByText('Editar perfil')).toBeInTheDocument();
+    expect(screen.getByText('Mensajes')).toBeInTheDocument();
+    expect(screen.getByText('Próximamente')).toBeInTheDocument();
+    // Seller has no customer-only entries.
+    expect(screen.queryByText('Mis favoritos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mis pedidos')).not.toBeInTheDocument();
+  });
+
+  it('closes the account drawer with the close button', async () => {
+    await loginAs(rawCustomerUser);
+
+    renderTabBar();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Cuenta/ }));
+    expect(screen.getByRole('dialog', { name: 'Cuenta' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
