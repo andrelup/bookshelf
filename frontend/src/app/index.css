@@ -38,4 +38,11 @@
     color: var(--color-ink);
     background-color: var(--color-bg);
   }
+
+  /* The design system drops the native (red) password-reveal/clear icons
+     rendered by Chromium/Edge inside inputs. */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }
