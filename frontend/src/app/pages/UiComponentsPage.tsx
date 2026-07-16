@@ -113,7 +113,7 @@ const UiComponentsPage = () => {
       </Section>
 
       <Section title="Estados del sistema">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <EmptyState
             title="Tu carrito está vacío"
             description="Todavía no has añadido ningún libro a tu carrito."

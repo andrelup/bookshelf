@@ -23,7 +23,7 @@ export const SystemStateCard = ({
   className = '',
 }: SystemStateCardProps) => (
   <div
-    className={`flex flex-col items-center rounded-md border border-border bg-bg px-6 py-12 text-center ${className}`}
+    className={`flex flex-col items-center rounded-md border border-border bg-bg px-4 py-8 text-center md:px-6 md:py-12 ${className}`}
   >
     {icon}
     <h2 className="mt-4 font-serif text-xl font-bold text-ink">{title}</h2>
