@@ -86,14 +86,14 @@ export const RegisterForm = () => {
           error={passwordError}
           required
         />
-        <p className="text-sm text-gray-500">Mínimo 8 caracteres (máximo 128)</p>
+        <p className="text-sm text-muted">Mínimo 8 caracteres (máximo 128)</p>
       </div>
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}
-      <Button type="submit" isLoading={isLoading}>
+      <Button type="submit" isLoading={isLoading} className="w-full">
         Registrarse
       </Button>
     </form>
