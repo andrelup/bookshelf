@@ -42,9 +42,9 @@ describe('LoginForm', () => {
       </AuthProvider>,
     );
 
-    await user.type(screen.getByLabelText('Email'), 'user@example.com');
-    await user.type(screen.getByLabelText('Password'), 'super-secret');
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.type(screen.getByLabelText('Correo electrónico'), 'user@example.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'super-secret');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Dashboard content' })).toBeInTheDocument();
@@ -65,9 +65,9 @@ describe('LoginForm', () => {
       </AuthProvider>,
     );
 
-    await user.type(screen.getByLabelText('Email'), 'user@example.com');
-    await user.type(screen.getByLabelText('Password'), 'super-secret');
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.type(screen.getByLabelText('Correo electrónico'), 'user@example.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'super-secret');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Home content' })).toBeInTheDocument();
