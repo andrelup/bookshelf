@@ -47,7 +47,7 @@ export const LoginForm = () => {
           {error}
         </p>
       )}
-      <Button type="submit" isLoading={isLoading}>
+      <Button type="submit" isLoading={isLoading} className="w-full">
         Log in
       </Button>
     </form>
