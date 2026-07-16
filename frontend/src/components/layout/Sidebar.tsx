@@ -6,6 +6,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 // receiving `user`/`onLogout` as props.
 import { useAuth } from '@/features/auth';
 import { Avatar } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 
 export interface SidebarProps {
@@ -28,11 +29,7 @@ const InactiveNavItem = ({
 }) => (
   <div className="flex items-center justify-between rounded px-3 py-2 text-sm text-body">
     <span>{label}</span>
-    {badge !== undefined && (
-      <span className="rounded-full bg-primary-50 px-2 text-xs font-semibold text-primary-dark">
-        {badge}
-      </span>
-    )}
+    {badge !== undefined && <Badge>{badge}</Badge>}
   </div>
 );
 
