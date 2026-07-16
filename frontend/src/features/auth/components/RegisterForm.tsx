@@ -60,14 +60,16 @@ export const RegisterForm = () => {
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4" noValidate>
       <Input
-        label="Name"
+        id="name"
+        label="Nombre"
         type="text"
         value={name}
         onChange={(event) => setName(event.target.value)}
         required
       />
       <Input
-        label="Email"
+        id="email"
+        label="Correo electrónico"
         type="email"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
@@ -76,7 +78,8 @@ export const RegisterForm = () => {
       />
       <div className="flex flex-col gap-1">
         <Input
-          label="Password"
+          id="password"
+          label="Contraseña"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -91,7 +94,7 @@ export const RegisterForm = () => {
         </p>
       )}
       <Button type="submit" isLoading={isLoading}>
-        Register
+        Registrarse
       </Button>
     </form>
   );

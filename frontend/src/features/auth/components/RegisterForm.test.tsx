@@ -51,10 +51,10 @@ describe('RegisterForm', () => {
     const user = userEvent.setup();
     renderRegisterForm();
 
-    await user.type(screen.getByLabelText('Name'), 'Test User');
-    await user.type(screen.getByLabelText('Email'), 'user@example.com');
-    await user.type(screen.getByLabelText('Password'), 'short');
-    await user.click(screen.getByRole('button', { name: 'Register' }));
+    await user.type(screen.getByLabelText('Nombre'), 'Test User');
+    await user.type(screen.getByLabelText('Correo electrónico'), 'user@example.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'short');
+    await user.click(screen.getByRole('button', { name: 'Registrarse' }));
 
     expect(
       await screen.findByText('La contraseña debe tener entre 8 y 128 caracteres'),
@@ -67,10 +67,10 @@ describe('RegisterForm', () => {
     const user = userEvent.setup();
     renderRegisterForm();
 
-    await user.type(screen.getByLabelText('Name'), 'Test User');
-    await user.type(screen.getByLabelText('Email'), 'not-an-email');
-    await user.type(screen.getByLabelText('Password'), 'valid-password');
-    await user.click(screen.getByRole('button', { name: 'Register' }));
+    await user.type(screen.getByLabelText('Nombre'), 'Test User');
+    await user.type(screen.getByLabelText('Correo electrónico'), 'not-an-email');
+    await user.type(screen.getByLabelText('Contraseña'), 'valid-password');
+    await user.click(screen.getByRole('button', { name: 'Registrarse' }));
 
     expect(await screen.findByText('Introduce un email válido')).toBeInTheDocument();
     expect(apiClient.post).not.toHaveBeenCalled();
@@ -80,10 +80,10 @@ describe('RegisterForm', () => {
     const user = userEvent.setup();
     renderRegisterForm();
 
-    await user.type(screen.getByLabelText('Name'), 'Test User');
-    await user.type(screen.getByLabelText('Email'), 'user@example.com');
-    await user.type(screen.getByLabelText('Password'), 'valid-password');
-    await user.click(screen.getByRole('button', { name: 'Register' }));
+    await user.type(screen.getByLabelText('Nombre'), 'Test User');
+    await user.type(screen.getByLabelText('Correo electrónico'), 'user@example.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'valid-password');
+    await user.click(screen.getByRole('button', { name: 'Registrarse' }));
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith('/auth/register', {
