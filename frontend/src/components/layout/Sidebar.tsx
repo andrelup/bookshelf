@@ -88,6 +88,12 @@ export const Sidebar = ({ className = '' }: SidebarProps) => {
           <InactiveNavItem label="Mensajes" badge={1} />
           <InactiveNavItem label="Ajustes" />
         </NavGroup>
+
+        <NavGroup label="Desarrollo">
+          <NavLink to="/componentes-ui" className={navLinkClassName}>
+            Componentes UI
+          </NavLink>
+        </NavGroup>
       </nav>
 
       <div className="mt-auto border-t border-border p-4">
