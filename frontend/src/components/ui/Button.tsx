@@ -8,8 +8,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-primary text-white hover:bg-primary-hover',
-  secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-  danger: 'bg-danger text-white hover:bg-danger',
+  secondary: 'border border-primary-100 bg-surface text-primary hover:bg-primary-50',
+  // Ghost destructive style: reserved for logout / delete confirmations.
+  danger: 'border border-danger-border bg-transparent text-danger hover:bg-danger-bg',
 };
 
 export const Button = ({
@@ -20,7 +21,7 @@ export const Button = ({
   className = '',
   ...rest
 }: ButtonProps) => {
-  const baseClasses = 'px-4 py-2 rounded font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = 'px-5 py-3 rounded text-[15px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <button
