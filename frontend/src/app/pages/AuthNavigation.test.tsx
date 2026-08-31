@@ -25,14 +25,14 @@ describe('auth pages navigation', () => {
       </AuthProvider>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Log in' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: 'Regístrate' }));
 
-    expect(screen.getByRole('heading', { name: 'Create account' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Crear cuenta' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: 'Inicia sesión' }));
 
-    expect(screen.getByRole('heading', { name: 'Log in' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument();
   });
 });

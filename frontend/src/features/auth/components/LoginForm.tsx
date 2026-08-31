@@ -29,14 +29,16 @@ export const LoginForm = () => {
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4" noValidate>
       <Input
-        label="Email"
+        id="email"
+        label="Correo electrónico"
         type="email"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         required
       />
       <Input
-        label="Password"
+        id="password"
+        label="Contraseña"
         type="password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
@@ -47,8 +49,8 @@ export const LoginForm = () => {
           {error}
         </p>
       )}
-      <Button type="submit" isLoading={isLoading}>
-        Log in
+      <Button type="submit" isLoading={isLoading} className="w-full">
+        Entrar
       </Button>
     </form>
   );
