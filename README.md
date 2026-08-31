@@ -110,3 +110,46 @@ Todos los comandos se ejecutan desde la raíz del monorepo:
 ## Despliegue
 
 El frontend y el backend se desarrollan juntos en este repositorio pero se **despliegan de forma independiente**, de modo que cada parte puede escalar y publicarse según su propio calendario.
+
+## Licencia
+
+Publicado bajo licencia [MIT](LICENSE.md). Puedes usar, copiar y modificar el
+código libremente, conservando el aviso de copyright.
+
+### Aviso: no apto para producción
+
+Como se indica arriba, esto es un ejercicio de aprendizaje: no es un producto,
+no tiene mantenimiento comprometido y **no está pensado para usarse en
+producción**. En concreto:
+
+- **Sin auditoría de seguridad.** La autenticación, la gestión de sesiones y el
+  control de acceso están implementados con fines didácticos y no han pasado
+  ninguna revisión de seguridad formal.
+- **Configuración orientada a desarrollo.** El entorno de `infra/` y el fichero
+  `.env.example` traen valores pensados para levantar el proyecto en local. Si
+  aun así lo despliegas, sustituye toda la configuración sensible por valores
+  propios y gestionados fuera del repositorio.
+- **Datos ficticios.** El catálogo, los usuarios y los pedidos que genera el
+  script de seed son datos sintéticos creados con Faker. No corresponden a
+  personas, libros ni transacciones reales.
+- **Sin estabilidad de API ni de esquema.** Los endpoints, los modelos de datos
+  y las migraciones pueden cambiar de forma incompatible en cualquier momento,
+  sin aviso ni ruta de migración.
+- **Sin soporte.** Los issues y las pull requests forman parte del ejercicio de
+  formación; no hay ningún compromiso de respuesta ni de corrección de fallos.
+
+Usarlo es cosa tuya y **bajo tu entera responsabilidad**, tal y como recoge la
+cláusula de exención de garantías de la licencia. Si buscas una base para un
+sistema real, trátalo como material de referencia y no como código listo para
+desplegar.
+
+> **Training project — not for production use.** BookShelf is a learning
+> exercise. It has not been security-audited, ships development-oriented
+> configuration and synthetic seed data, offers no API or schema stability and
+> no support. Use it as a reference, at your own risk, under the MIT terms.
+
+### Dependencias de terceros
+
+Las librerías que usa el proyecto (entre otras FastAPI, SQLAlchemy, React y
+TailwindCSS) se distribuyen bajo sus propias licencias. La MIT de este
+repositorio cubre únicamente el código original de BookShelf.
