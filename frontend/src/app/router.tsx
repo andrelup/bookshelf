@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { ProtectedRoute } from '@/features/auth';
+import { ProtectedRoute, RoleRoute } from '@/features/auth';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -33,9 +33,11 @@ export const router = createBrowserRouter([
       {
         path: '/dashboard',
         element: (
-          <ProtectedRoute>
+          // Seller-only: the dashboard shows selling metrics, so a customer
+          // reaching it by URL gets the 404 screen.
+          <RoleRoute allow={['seller']}>
             <DashboardPage />
-          </ProtectedRoute>
+          </RoleRoute>
         ),
       },
       {

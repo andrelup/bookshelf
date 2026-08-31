@@ -71,9 +71,12 @@ export const Sidebar = ({ className = '' }: SidebarProps) => {
           <NavLink to="/" end className={navLinkClassName}>
             Inicio
           </NavLink>
-          <NavLink to="/dashboard" className={navLinkClassName}>
-            Panel
-          </NavLink>
+          {/* Seller-only route: hidden for customers, who would get a 404. */}
+          {user?.role === 'seller' && (
+            <NavLink to="/dashboard" className={navLinkClassName}>
+              Dashboard
+            </NavLink>
+          )}
           <InactiveNavItem label="Explorar catálogo" />
         </NavGroup>
 

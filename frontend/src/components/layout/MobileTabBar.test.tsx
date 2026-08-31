@@ -118,6 +118,53 @@ describe('MobileTabBar', () => {
     expect(screen.queryByText('Mis pedidos')).not.toBeInTheDocument();
   });
 
+  it('links to the dashboard from the seller account drawer', async () => {
+    await loginAs(rawSellerUser);
+
+    renderTabBar();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Cuenta/ }));
+
+    expect(screen.getByRole('link', { name: /Dashboard/ })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    );
+  });
+
+  it('hides the seller-only dashboard entry from a customer', async () => {
+    await loginAs(rawCustomerUser);
+
+    renderTabBar();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Cuenta/ }));
+
+    expect(screen.queryByRole('link', { name: /Dashboard/ })).not.toBeInTheDocument();
+  });
+
+  it('marks the dashboard entry as active while on /dashboard', async () => {
+    await loginAs(rawSellerUser);
+
+    renderTabBar(['/dashboard']);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Cuenta/ }));
+
+    expect(screen.getByRole('link', { name: /Dashboard/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('closes the account drawer when the dashboard entry is tapped', async () => {
+    await loginAs(rawSellerUser);
+
+    renderTabBar();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Cuenta/ }));
+    fireEvent.click(screen.getByRole('link', { name: /Dashboard/ }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('closes the account drawer with the close button', async () => {
     await loginAs(rawCustomerUser);
 
