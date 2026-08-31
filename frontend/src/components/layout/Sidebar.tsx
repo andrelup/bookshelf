@@ -72,7 +72,7 @@ export const Sidebar = ({ className = '' }: SidebarProps) => {
             Inicio
           </NavLink>
           <NavLink to="/dashboard" className={navLinkClassName}>
-            Panel
+            Dashboard
           </NavLink>
           <InactiveNavItem label="Explorar catálogo" />
         </NavGroup>
