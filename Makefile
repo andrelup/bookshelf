@@ -10,6 +10,12 @@
 # interprete de .venv por ruta. Windows y Linux/macOS colocan los binarios
 # del venv en carpetas distintas, de ahi la deteccion de abajo.
 #
+# Ningun target hace `cd backend`: todo se invoca desde la raiz, igual que
+# pre-commit. Si no, mypy y pytest dejan un segundo juego de cachees dentro de
+# backend/, porque las escriben en su cwd. Por eso se les pasa la config por
+# ruta. ruff es la excepcion: no mira el cwd sino el pyproject.toml que
+# descubre, asi que ademas necesita --cache-dir para no crear backend/.ruff_cache.
+#
 # Los `echo` van sin parentesis ni comillas a proposito, y las rutas del venv
 # con barras normales: make usa sh.exe si esta en el PATH (Git Bash) y cmd.exe
 # si no. sh se come los backslashes y falla con los metacaracteres; el texto
@@ -18,11 +24,9 @@
 ifeq ($(OS),Windows_NT)
 SYS_PYTHON ?= python
 PYTHON := .venv/Scripts/python.exe
-BACKEND_PYTHON := ../.venv/Scripts/python.exe
 else
 SYS_PYTHON ?= python3
 PYTHON := .venv/bin/python
-BACKEND_PYTHON := ../.venv/bin/python
 endif
 
 # Argumentos extra para `make setup`, p. ej.:
@@ -80,7 +84,7 @@ dev:
 ## dev-back: backend en el host con hot reload, contra la PostgreSQL de Docker.
 ## Requiere `make setup` (o al menos `make db-up`) hecho antes.
 dev-back:
-	cd backend && $(BACKEND_PYTHON) -m uvicorn src.main:app --reload --port 8000
+	$(PYTHON) -m uvicorn src.main:app --reload --reload-dir backend/src --port 8000
 
 ## dev-front: frontend en el host con hot reload (Vite, puerto 3000).
 dev-front:
@@ -105,7 +109,7 @@ test: test-back
 
 ## test-back: tests del backend (pytest) con reporte de cobertura.
 test-back:
-	cd backend && $(BACKEND_PYTHON) -m pytest --cov=src --cov-report=term-missing
+	$(PYTHON) -m pytest backend -c backend/pyproject.toml -o cache_dir=../.pytest_cache --cov=backend/src --cov-report=term-missing
 
 ## test-front: placeholder hasta que el frontend tenga suite de tests
 ## configurada (ver issue futura). No debe romper `make test`.
@@ -118,7 +122,8 @@ test-e2e:
 
 ## lint: ruff check + mypy en backend, eslint en frontend.
 lint:
-	cd backend && $(BACKEND_PYTHON) -m ruff check . && $(BACKEND_PYTHON) -m mypy .
+	$(PYTHON) -m ruff check --cache-dir .ruff_cache backend
+	$(PYTHON) -m mypy --config-file backend/pyproject.toml backend
 	npm --prefix frontend run lint
 
 ## lint-front: solo el linter del frontend (eslint, falla con cualquier warning).
@@ -131,11 +136,11 @@ format-front:
 
 ## migrate: aplica las migraciones de Alembic hasta la ultima revision.
 migrate:
-	cd backend && $(BACKEND_PYTHON) -m alembic upgrade head
+	$(PYTHON) -m alembic -c backend/alembic.ini upgrade head
 
 ## seed: pobla la base de datos con datos de ejemplo.
 seed:
-	cd backend && $(BACKEND_PYTHON) seed.py
+	$(PYTHON) backend/seed.py
 
 ## build: construye las imagenes Docker de backend y frontend.
 ## frontend/Dockerfile aun no existe (llegara en una tarea futura); mientras

@@ -225,10 +225,13 @@ def start_database() -> bool:
 
 
 def migrate_and_seed(seed: bool) -> None:
+    # Desde la raiz, igual que los targets del Makefile y que pre-commit: un
+    # unico cwd para todas las herramientas. alembic.ini usa %(here)s, asi que
+    # resuelve sus rutas contra su propio directorio, no contra el cwd.
     python = str(venv_python())
-    run([python, "-m", "alembic", "upgrade", "head"], cwd=BACKEND)
+    run([python, "-m", "alembic", "-c", str(BACKEND / "alembic.ini"), "upgrade", "head"])
     if seed:
-        run([python, "seed.py"], cwd=BACKEND)
+        run([python, str(BACKEND / "seed.py")])
 
 
 def print_summary() -> None:

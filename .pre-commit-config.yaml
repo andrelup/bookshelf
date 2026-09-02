@@ -13,18 +13,26 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.20
     hooks:
+      # --cache-dir: ruff escribe la cache junto al pyproject.toml que descubre,
+      # no en el cwd, asi que sin esto dejaria un backend/.ruff_cache aparte del
+      # de la raiz. El mismo flag esta en el target `lint` del Makefile.
       - id: ruff-check
         files: ^backend/
-        args: [--fix]
+        args: [--fix, --cache-dir, .ruff_cache]
       - id: ruff-format
         files: ^backend/
+        args: [--cache-dir, .ruff_cache]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v2.1.0
     hooks:
       - id: mypy
         files: ^backend/src/
-        args: [--strict]
+        # pre-commit ejecuta desde la raiz y aqui no hay pyproject.toml, asi
+        # que sin --config-file mypy ignoraria [tool.mypy] de backend/ y solo
+        # aplicaria el --strict de esta linea. Con la ruta explicita el hook y
+        # `make lint` usan exactamente la misma configuracion.
+        args: [--config-file, backend/pyproject.toml]
         additional_dependencies:
           - fastapi
           - "sqlalchemy[asyncio]>=2.0"
