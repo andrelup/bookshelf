@@ -60,7 +60,7 @@ frontend/
 
 - Functional components con hooks. **No** class components.
 - `PascalCase` para componentes (`BookCard.tsx`), `camelCase` para hooks (`useAuth.ts`), `kebab-case` para utilidades y API (`books-api.ts`).
-- TypeScript strict. Prohibido `any` — usar `unknown` con *narrowing*.
+- TypeScript strict. Prohibido `any` — usar `unknown` con _narrowing_.
 - **Named exports** siempre (salvo páginas para lazy loading).
 - Props definidas con `interface`, no con `type`.
 
@@ -105,9 +105,12 @@ import { useApi } from '@/hooks/useApi';
 
 ## Puesta en marcha
 
+Desde la raíz del monorepo, `make setup` instala también las dependencias de este proyecto y
+`make dev-front` arranca el servidor de desarrollo. Dentro de `frontend/`:
+
 ```bash
 npm install
-npm run dev        # servidor de desarrollo (Vite)
+npm run dev        # servidor de desarrollo (Vite, puerto 3000)
 npm run build      # build de producción
 ```
 
