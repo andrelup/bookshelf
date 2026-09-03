@@ -2,6 +2,15 @@
 
 SPA for a bookstore. This CLAUDE.md complements the monorepo root CLAUDE.md.
 
+## Detailed documentation
+
+This file is the summary. The full rules live in `docs/`, at the repo root. **Open only the one the current task needs** — they are detailed, and reading all of them wastes context.
+
+- `docs/frontend-architecture.md` — layer rules, routing, data access, state, and the step-by-step recipe for a new feature. Read it when adding a feature, a route, or a backend call.
+- `docs/frontend-ui-components.md` — the component catalogue with its real props, design tokens, colour and typography policy, responsive and accessibility rules. Read it before building any screen.
+- `docs/frontend-code-style.md` — ESLint, Prettier and the strict TypeScript settings. Read it when a lint, format or type check fails.
+- `docs/frontend-testing.md` — Vitest + React Testing Library conventions and templates. Read it when writing tests.
+
 ## Stack
 
 - React 18

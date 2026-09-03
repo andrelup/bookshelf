@@ -2,6 +2,15 @@
 
 REST API for a bookstore. This CLAUDE.md complements the monorepo root CLAUDE.md.
 
+## Detailed documentation
+
+This file is the summary. The full rules live in `docs/`, at the repo root. **Open only the one the current task needs** — they are detailed, and reading all of them wastes context.
+
+- `docs/backend-hexagonal-architecture.md` — the dependency rule, ports, adapters, error handling, and the end-to-end recipe for a new use case. Read it before any change under `backend/src/`.
+- `docs/backend-database-sqlalchemy.md` — ORM models, sessions and transactions, query patterns, Alembic. Read it when touching persistence or adding an entity.
+- `docs/backend-code-style.md` — the Ruff rule families and mypy strict. Read it when a lint or type check fails.
+- `docs/backend-testing.md` — the three test tiers, fixtures, fakes, templates. Read it when writing tests.
+
 ## Stack
 
 - Python 3.12
