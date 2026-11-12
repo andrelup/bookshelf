@@ -26,6 +26,12 @@ The live component catalogue is the app itself, at the route **`/componentes-ui`
 | [Code Style](./backend-code-style.md) | Always. Ruff rule families and mypy strict, and what they demand. |
 | [Testing](./backend-testing.md) | Every change. The three test tiers, fixtures, fakes and templates. |
 
+## Architecture Decision Records — `adr/`
+
+Why things are the way they are. Read the [ADR index](./adr/README.md) before changing an
+architecture, tooling or workflow decision, and add a new ADR whenever you make one. Following the
+project rule, ADRs are written in Spanish.
+
 ## Ground rules that apply to both stacks
 
 - **Code in English**, documentation in Spanish, UI copy in Spanish.

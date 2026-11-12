@@ -16,6 +16,8 @@ class Book:
         seller_id: Identifier of the seller who owns this listing.
         description: Free-text description of the book.
         category: Category/genre used for browsing and search.
+        publisher: Publishing house (editorial). `None` when unknown; when
+            present it must not be blank.
         id: Unique identifier. `None` for a book not yet persisted.
         version: Optimistic-locking version the caller loaded this book at.
             A `save()` asserts this value against the row's current version,
@@ -31,5 +33,6 @@ class Book:
     seller_id: int
     description: str
     category: str
+    publisher: str | None = None
     id: int | None = None
     version: int = 1

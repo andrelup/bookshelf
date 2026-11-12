@@ -54,6 +54,8 @@ async def test_create_when_customer_attempts_raises_forbidden(
         {"stock": -1},
         {"title": "   "},
         {"isbn": ""},
+        {"publisher": ""},
+        {"publisher": "   "},
     ],
 )
 async def test_create_when_book_data_invalid_raises_validation_error(
@@ -289,3 +291,83 @@ async def test_update_does_not_replace_the_clients_version_with_the_stored_one(
     assert updated.stock == 7
     with pytest.raises(StaleDataError):
         await sut.update(seller_user, created.id, make_book(version=created.version))
+
+
+async def test_create_when_publisher_is_none_returns_book_without_publisher(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    book = make_book(publisher=None)
+
+    # Act
+    created = await sut.create(seller_user, book)
+
+    # Assert
+    assert created.publisher is None
+
+
+async def test_create_when_publisher_given_keeps_publisher(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    book = make_book(publisher="Addison-Wesley")
+
+    # Act
+    created = await sut.create(seller_user, book)
+
+    # Assert
+    assert created.publisher == "Addison-Wesley"
+
+
+async def test_create_when_publisher_blank_raises_validation_error_with_message(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    book = make_book(publisher="   ")
+
+    # Act / Assert
+    with pytest.raises(BookValidationError, match="Publisher cannot be blank"):
+        await sut.create(seller_user, book)
+
+
+async def test_update_when_publisher_blank_raises_validation_error_and_keeps_stored_value(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+    changes = make_book(publisher="  ")
+
+    # Act / Assert
+    with pytest.raises(BookValidationError, match="Publisher cannot be blank"):
+        await sut.update(seller_user, created.id, changes)
+    stored = await sut.get(created.id)
+    assert stored.publisher == "Pearson"
+
+
+async def test_update_when_publisher_changed_returns_new_publisher(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+
+    # Act
+    updated = await sut.update(seller_user, created.id, make_book(publisher="OReilly"))
+
+    # Assert
+    assert updated.publisher == "OReilly"
+
+
+async def test_update_when_publisher_set_to_none_clears_it(
+    sut: BookService, seller_user: User
+) -> None:
+    # Arrange
+    created = await sut.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+
+    # Act
+    updated = await sut.update(seller_user, created.id, make_book(publisher=None))
+
+    # Assert
+    assert updated.publisher is None

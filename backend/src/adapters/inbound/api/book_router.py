@@ -48,6 +48,7 @@ def _to_response(book: Book) -> BookResponse:
         seller_id=book.seller_id,
         description=book.description,
         category=book.category,
+        publisher=book.publisher,
         version=book.version,
     )
 
@@ -144,6 +145,7 @@ async def create_book(
         seller_id=current_user.id or _UNVALIDATED_SELLER_ID_PLACEHOLDER,
         description=payload.description,
         category=payload.category,
+        publisher=payload.publisher,
     )
     created = await book_service.create(current_user, book)
     return ApiResponse(success=True, data=_to_response(created), error=None)
@@ -177,6 +179,7 @@ async def update_book(
         seller_id=current_user.id or _UNVALIDATED_SELLER_ID_PLACEHOLDER,
         description=payload.description,
         category=payload.category,
+        publisher=payload.publisher,
         version=payload.version,
     )
     updated = await book_service.update(current_user, book_id, changes)

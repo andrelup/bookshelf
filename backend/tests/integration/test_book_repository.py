@@ -153,3 +153,86 @@ async def test_delete_when_book_missing_does_not_raise(book_db_session: AsyncSes
 
     # Act / Assert — deleting a non-existent book is a no-op, not an error.
     await sut.delete(999)
+
+
+async def test_save_when_new_book_has_publisher_round_trips_it(
+    book_db_session: AsyncSession,
+) -> None:
+    # Arrange
+    sut = SqlAlchemyBookRepository(book_db_session)
+
+    # Act
+    saved = await sut.save(make_book(publisher="Addison-Wesley"))
+    assert saved.id is not None
+    found = await sut.find_by_id(saved.id)
+
+    # Assert
+    assert saved.publisher == "Addison-Wesley"
+    assert found is not None
+    assert found.publisher == "Addison-Wesley"
+
+
+async def test_save_when_new_book_has_no_publisher_persists_none(
+    book_db_session: AsyncSession,
+) -> None:
+    # Arrange
+    sut = SqlAlchemyBookRepository(book_db_session)
+
+    # Act
+    saved = await sut.save(make_book())
+    assert saved.id is not None
+    found = await sut.find_by_id(saved.id)
+
+    # Assert
+    assert found is not None
+    assert found.publisher is None
+
+
+async def test_save_when_publisher_changes_on_update_persists_new_value(
+    book_db_session: AsyncSession,
+) -> None:
+    # Arrange
+    sut = SqlAlchemyBookRepository(book_db_session)
+    saved = await sut.save(make_book(publisher="Pearson"))
+    assert saved.id is not None
+
+    # Act
+    updated = await sut.save(make_book(id=saved.id, publisher="OReilly"))
+    found = await sut.find_by_id(saved.id)
+
+    # Assert
+    assert updated.publisher == "OReilly"
+    assert found is not None
+    assert found.publisher == "OReilly"
+
+
+async def test_save_when_publisher_set_back_to_none_clears_it(
+    book_db_session: AsyncSession,
+) -> None:
+    # Arrange
+    sut = SqlAlchemyBookRepository(book_db_session)
+    saved = await sut.save(make_book(publisher="Pearson"))
+    assert saved.id is not None
+
+    # Act
+    updated = await sut.save(make_book(id=saved.id, publisher=None))
+    found = await sut.find_by_id(saved.id)
+
+    # Assert
+    assert updated.publisher is None
+    assert found is not None
+    assert found.publisher is None
+
+
+async def test_save_when_publisher_is_255_chars_persists_it(
+    book_db_session: AsyncSession,
+) -> None:
+    # Arrange
+    sut = SqlAlchemyBookRepository(book_db_session)
+    publisher = "P" * 255
+
+    # Act
+    saved = await sut.save(make_book(publisher=publisher))
+
+    # Assert
+    assert saved.publisher == publisher

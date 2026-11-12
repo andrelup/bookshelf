@@ -312,9 +312,14 @@ shows why this matters — the books migration had to be reconciled by hand afte
 chained after the users migration and could carry a real FK.
 
 Adding a `NOT NULL` column to a populated table uses `server_default` to backfill in one step,
-as the `version` migration does.
+as the `version` migration does. An optional column is simply `nullable=True` and needs no
+backfill, as the `publisher` migration does.
 
-Current history is linear: users → books → favourite lists/items → version columns.
+The `migration-helper` subagent automates this loop: it detects the model changes, autogenerates
+the revision, reviews it against these rules and shows the SQL, and only applies it in a second,
+explicit call once the SQL has been approved.
+
+Current history is linear: users → books → favourite lists/items → version columns → book publisher.
 
 ---
 

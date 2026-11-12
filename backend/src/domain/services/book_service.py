@@ -115,6 +115,8 @@ class BookService:
             raise BookValidationError("Title cannot be empty")
         if not book.isbn.strip():
             raise BookValidationError("ISBN cannot be empty")
+        if book.publisher is not None and not book.publisher.strip():
+            raise BookValidationError("Publisher cannot be blank")
         if book.price <= 0:
             raise BookValidationError("Price must be greater than zero")
         if book.stock < 0:
