@@ -31,6 +31,7 @@ Each subdirectory (`backend/`, `frontend/`) has its own CLAUDE.md with conventio
 | Read or write data, add an entity, write a migration | `docs/backend-database-sqlalchemy.md` |
 | Debug a ruff/mypy failure | `docs/backend-code-style.md` |
 | Write backend tests | `docs/backend-testing.md` |
+| Make or change an architecture, tooling or workflow decision | `docs/adr/README.md` |
 
 `docs/README.md` is the index; consult it only if the table above does not resolve which document applies.
 
