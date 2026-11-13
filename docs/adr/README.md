@@ -43,3 +43,4 @@ No hace falta para cambios rutinarios que ya cubren las guías de `docs/`.
 |---|---|---|---|
 | [0001](./0001-registrar-decisiones-de-arquitectura.md) | Registrar las decisiones de arquitectura con ADR | Aceptado | 2026-11-13 |
 | [0002](./0002-agente-test-writer-separado.md) | Agente `test-writer` separado para los tests del backend | Aceptado | 2026-11-13 |
+| [0003](./0003-agente-migration-helper.md) | Agente `migration-helper` para las migraciones de Alembic | Aceptado | 2026-11-13 |
