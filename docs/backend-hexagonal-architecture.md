@@ -140,6 +140,7 @@ class Book:
     seller_id: int
     description: str
     category: str
+    publisher: str | None = None
     id: int | None = None
     version: int = 1
 ```

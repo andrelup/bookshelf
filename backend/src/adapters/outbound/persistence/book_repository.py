@@ -19,6 +19,7 @@ def _to_domain(book_orm: BookORM) -> Book:
         seller_id=book_orm.seller_id,
         description=book_orm.description,
         category=book_orm.category,
+        publisher=book_orm.publisher,
         version=book_orm.version,
     )
 
@@ -32,6 +33,7 @@ def _apply_fields(book_orm: BookORM, book: Book) -> None:
     book_orm.seller_id = book.seller_id
     book_orm.description = book.description
     book_orm.category = book.category
+    book_orm.publisher = book.publisher
 
 
 def _search_filter(query: str) -> ColumnElement[bool]:
@@ -103,6 +105,7 @@ class SqlAlchemyBookRepository:
                 seller_id=book.seller_id,
                 description=book.description,
                 category=book.category,
+                publisher=book.publisher,
             )
             self._session.add(book_orm)
 

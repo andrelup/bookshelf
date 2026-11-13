@@ -16,6 +16,7 @@ class BookCreate(BaseModel):
                 "stock": 12,
                 "description": "A guide to becoming a better developer.",
                 "category": "Software Engineering",
+                "publisher": "Addison-Wesley Professional",
             }
         }
     )
@@ -27,6 +28,13 @@ class BookCreate(BaseModel):
     stock: int = Field(ge=0)
     description: str = ""
     category: str = Field(min_length=1, max_length=100)
+    publisher: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Publishing house (editorial), or null when unknown.",
+        examples=["Addison-Wesley Professional"],
+    )
 
 
 class BookUpdate(BaseModel):
@@ -49,6 +57,7 @@ class BookUpdate(BaseModel):
                 "stock": 8,
                 "description": "A guide to becoming a better developer.",
                 "category": "Software Engineering",
+                "publisher": "Addison-Wesley Professional",
                 "version": 1,
             }
         }
@@ -61,6 +70,13 @@ class BookUpdate(BaseModel):
     stock: int = Field(ge=0)
     description: str = ""
     category: str = Field(min_length=1, max_length=100)
+    publisher: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Publishing house (editorial), or null when unknown.",
+        examples=["Addison-Wesley Professional"],
+    )
     version: int = Field(
         ge=1,
         description=(
@@ -85,6 +101,7 @@ class BookResponse(BaseModel):
     seller_id: int = Field(description="Id of the seller who owns this listing.")
     description: str
     category: str
+    publisher: str | None = Field(description="Publishing house (editorial); null when unknown.")
     version: int = Field(
         description=(
             "Current optimistic-locking version of this book. Send it back in "

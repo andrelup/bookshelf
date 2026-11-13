@@ -10,6 +10,7 @@ from collections.abc import Callable
 from typing import Any
 
 import httpx
+import pytest
 from src.domain.models.user import User
 from src.domain.services.book_service import BookService
 
@@ -409,3 +410,240 @@ async def test_delete_book_when_customer_returns_403(
 
     # Assert
     assert response.status_code == 403
+
+
+async def test_create_book_when_publisher_given_returns_it_in_response(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+) -> None:
+    # Arrange
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.post("/books", json={**_VALID_PAYLOAD, "publisher": "Addison-Wesley"})
+
+    # Assert
+    assert response.status_code == 201
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["publisher"] == "Addison-Wesley"
+
+
+async def test_create_book_when_publisher_omitted_returns_null_publisher(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+) -> None:
+    # Arrange
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.post("/books", json=_VALID_PAYLOAD)
+
+    # Assert
+    assert response.status_code == 201
+    data = response.json()["data"]
+    assert "publisher" in data
+    assert data["publisher"] is None
+
+
+async def test_create_book_when_publisher_null_returns_null_publisher(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+) -> None:
+    # Arrange
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.post("/books", json={**_VALID_PAYLOAD, "publisher": None})
+
+    # Assert
+    assert response.status_code == 201
+    assert response.json()["data"]["publisher"] is None
+
+
+@pytest.mark.parametrize("publisher", ["", "x" * 256, 123])
+async def test_create_book_when_publisher_invalid_returns_422(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    publisher: object,
+) -> None:
+    # Arrange
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.post("/books", json={**_VALID_PAYLOAD, "publisher": publisher})
+
+    # Assert
+    assert response.status_code == 422
+    body = response.json()
+    assert body["success"] is False
+    assert body["data"] is None
+
+
+async def test_create_book_when_publisher_at_max_length_returns_201(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+) -> None:
+    # Arrange
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.post("/books", json={**_VALID_PAYLOAD, "publisher": "x" * 255})
+
+    # Assert
+    assert response.status_code == 201
+    assert response.json()["data"]["publisher"] == "x" * 255
+
+
+async def test_create_book_when_publisher_whitespace_only_returns_422_from_domain(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+) -> None:
+    # Arrange
+    authenticated_as(seller_user)
+
+    # Act - the blank value passes the schema (length >= 1); the domain rejects it.
+    response = await client.post("/books", json={**_VALID_PAYLOAD, "publisher": "   "})
+
+    # Assert
+    assert response.status_code == 422
+    body = response.json()
+    assert body["success"] is False
+    assert body["data"] is None
+    assert "Publisher cannot be blank" in str(body["error"])
+
+
+async def test_get_book_returns_publisher(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    customer_user: User,
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange
+    created = await book_service.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+    authenticated_as(customer_user)
+
+    # Act
+    response = await client.get(f"/books/{created.id}")
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json()["data"]["publisher"] == "Pearson"
+
+
+async def test_list_books_includes_publisher_null_and_value(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    customer_user: User,
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange
+    await book_service.create(seller_user, make_book(isbn="a", publisher="Pearson"))
+    await book_service.create(seller_user, make_book(isbn="b"))
+    authenticated_as(customer_user)
+
+    # Act
+    response = await client.get("/books")
+
+    # Assert
+    assert response.status_code == 200
+    items = response.json()["data"]["items"]
+    assert [item["publisher"] for item in items] == ["Pearson", None]
+
+
+async def test_update_book_when_publisher_changed_returns_new_publisher(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange
+    created = await book_service.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.put(
+        f"/books/{created.id}", json=_update_payload(created.version, publisher="OReilly")
+    )
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json()["data"]["publisher"] == "OReilly"
+
+
+async def test_update_book_when_publisher_omitted_clears_stored_publisher(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange
+    created = await book_service.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act - PUT is a full replacement, so omitting publisher clears it.
+    response = await client.put(f"/books/{created.id}", json=_update_payload(created.version))
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json()["data"]["publisher"] is None
+    stored = await book_service.get(created.id)
+    assert stored.publisher is None
+
+
+@pytest.mark.parametrize("publisher", ["", "x" * 256])
+async def test_update_book_when_publisher_invalid_returns_422(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+    publisher: str,
+) -> None:
+    # Arrange
+    created = await book_service.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.put(
+        f"/books/{created.id}", json=_update_payload(created.version, publisher=publisher)
+    )
+
+    # Assert
+    assert response.status_code == 422
+    assert response.json()["success"] is False
+
+
+async def test_update_book_when_publisher_whitespace_only_returns_422_and_keeps_stored(
+    client: httpx.AsyncClient,
+    authenticated_as: Callable[[User], None],
+    seller_user: User,
+    book_service: BookService,
+) -> None:
+    # Arrange
+    created = await book_service.create(seller_user, make_book(publisher="Pearson"))
+    assert created.id is not None
+    authenticated_as(seller_user)
+
+    # Act
+    response = await client.put(
+        f"/books/{created.id}", json=_update_payload(created.version, publisher="   ")
+    )
+
+    # Assert
+    assert response.status_code == 422
+    body = response.json()
+    assert body["success"] is False
+    assert "Publisher cannot be blank" in str(body["error"])
+    assert (await book_service.get(created.id)).publisher == "Pearson"
